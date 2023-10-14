@@ -1,4 +1,7 @@
-__pycache__
 .env
 *.log
-/internal/evotune-microservice/temp
+**/temp
+.env.*
+__pycache__/
+env/
+.vscode/
