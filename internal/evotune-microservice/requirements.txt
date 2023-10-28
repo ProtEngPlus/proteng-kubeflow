@@ -3,3 +3,6 @@ pydantic>=1.8.0,<2.0.0
 uvicorn>=0.15.0,<0.16.0
 jax-unirep==2.2.0
 pandas==2.1.1
+gcloud-aio-storage==9.0.0
+aiofile==3.8.8
+google-cloud-storage==2.12.0
