@@ -33,10 +33,12 @@ def downloadFromBucket(bucketName, folderName, fileName):
 def getStorageClient():
     creds = {
         "type": "service_account",
+        "project_id": os.environ.get('PROJECT_ID'),
         "private_key_id": os.environ.get('PRIVATE_KEY_ID'),
         "private_key": os.environ.get('PRIVATE_KEY'),
         "client_email": os.environ.get('CLIENT_EMAIL'),
         "client_id": os.environ.get('CLIENT_ID'),
+        "token_uri": os.environ.get('TOKEN_URI'),
     }
     credentials = service_account.Credentials.from_service_account_info(creds)
     storage_client = storage.Client(credentials=credentials)

@@ -7,7 +7,7 @@ load_dotenv()
 from fastapi import FastAPI
 from aiofile import AIOFile
 
-from common.db import createBucket, uploadToBucket, downloadFromBucket
+from common.db import createBucket, downloadFromBucket
 from src.model.model import RequestEvotuneBody
 from src.service.train import runEvotuneThread
 
@@ -19,12 +19,14 @@ def bucketCreation():
     print("creating bucket...")
     createBucket("unirep")
     print("bucket created")
+    return "success"
 
 @app.get("/evotune")
 def get_weights():
     print("----------------------------------------------------------")
     print("getting evotuned_params...")
-    downloadFromBucket("unirep", "123", "1.pkl")
+    print(downloadFromBucket("unirep", "123", "1.pkl"))
+    print("evotuned_params downloaded")
     return "success"
 
 @app.post("/evotune")

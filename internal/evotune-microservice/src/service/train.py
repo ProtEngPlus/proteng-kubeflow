@@ -27,10 +27,10 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         # n_epochs_config = {"low": 1, "high": 1}
         # lr_config = {"low": 1e-5, "high": 1e-3}
         study, evotuned_params = evotune(
-            sequences=sequences["sequences"],
+            sequences=sequences["train_set"],
             model_func=apply_fun,
             params=inital_params,
-            out_dom_seqs=sequences["holdoutSequences"],
+            out_dom_seqs=sequences["out_domain_val_set"],
             n_trials=requestBody.evotune_params.n_trials,
             n_splits=requestBody.evotune_params.n_splits,
             n_epochs_config=requestBody.evotune_params.n_epochs_config,
