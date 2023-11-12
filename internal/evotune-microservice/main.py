@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
-from aiofile import AIOFile
 
 from common.db import createBucket, downloadFromBucket
 from src.model.model import RequestEvotuneBody
