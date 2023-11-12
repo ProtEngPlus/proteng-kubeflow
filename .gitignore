@@ -5,3 +5,6 @@
 __pycache__/
 env/
 .vscode/
+blast_result*
+tmp/
+creds.json

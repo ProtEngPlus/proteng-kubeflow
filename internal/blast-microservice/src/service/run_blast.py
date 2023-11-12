@@ -3,9 +3,15 @@ import re
 import pandas as pd
 import threading
 import json
+from common.db import (
+    createBucket,
+    uploadToBucket,
+    downloadFromBucket,
+    asyncUploadToBucket,
+)
 
 
-def run_blast_thread(blast_params, job_id, random_state):
+def run_blast_thread(blast_params, job_id, running_id, random_state):
     print("Start BLAST")  # Print the "start blast" message when the thread starts
 
     # Run BLAST
@@ -35,8 +41,8 @@ def run_blast_thread(blast_params, job_id, random_state):
     # Convert the results to a JSON string
     results_json = json.dumps(results)
 
-    # Save the JSON results to a local file
-    with open(f"blast_result_{job_id}.json", "w") as file:
-        file.write(results_json)
+    # Upload the JSON string directly to the object storage bucket
+    upload_status = uploadToBucket("sequence", job_id, running_id, results_json)
 
     print("Thread finished")  # Print "Thread finished" when the thread is done
+    return upload_status
