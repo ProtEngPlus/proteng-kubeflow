@@ -1,4 +1,10 @@
 .env
-__pycache__
-temp/
 *.log
+**/temp
+.env.*
+__pycache__/
+env/
+.vscode/
+blast_result*
+tmp/
+creds.json
