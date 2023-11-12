@@ -2,7 +2,7 @@ FROM python:3.11.6-slim
 
 WORKDIR /code
 
-COPY /blast ./microservice
+COPY /blast-microservice ./microservice
 
 COPY /common ./common
 
