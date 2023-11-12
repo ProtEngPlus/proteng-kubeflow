@@ -26,7 +26,8 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internal/blast-microservice
+            context: ./internal
+            file: ./internal/blast-microservice/Dockerfile
             push: false
             tags: blast-service:${{ env.SHORT_SHA }}
             cache-from: type=gha
@@ -51,7 +52,8 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internal/evotune-microservice
+            context: ./internal
+            file: ./internal/evotune-microservice/Dockerfile
             push: false
             tags: blast-service:${{ env.SHORT_SHA }}
             cache-from: type=gha
@@ -76,7 +78,8 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internal/fittop-microservice
+            context: ./internal
+            file: ./internal/fittop-microservice/Dockerfile
             push: false
             tags: blast-service:${{ env.SHORT_SHA }}
             cache-from: type=gha
