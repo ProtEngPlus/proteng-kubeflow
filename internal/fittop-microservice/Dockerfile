@@ -2,7 +2,7 @@ FROM python:3.11.6-slim
 
 WORKDIR /code
 
-COPY /fittop-mircroservice ./microservice
+COPY /fittop-microservice ./microservice
 
 COPY /common ./common
 
