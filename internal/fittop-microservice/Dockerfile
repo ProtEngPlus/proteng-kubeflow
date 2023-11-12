@@ -2,11 +2,9 @@ FROM python:3.11.6-slim
 
 WORKDIR /code
 
-# COPY /top-model ./microservice
+COPY /fittop-microservice ./microservice
 
-COPY ./ /code/microservice
-
-# COPY /common ./common
+COPY /common ./common
 
 RUN pip install --no-cache-dir --upgrade -r microservice/requirements.txt
 
