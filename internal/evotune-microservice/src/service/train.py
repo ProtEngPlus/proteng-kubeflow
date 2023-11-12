@@ -1,29 +1,22 @@
-from jax.random import PRNGKey
+import pickle as pkl
 
+from jax.random import PRNGKey
 from jax_unirep import evotune
 from jax_unirep.evotuning_models import mlstm64
 from jax_unirep.utils import dump_params
 
 from src.model.model import RequestEvotuneBody
 
+from src.service.db import getSequencesFromDB
+from common.db import createBucket, uploadToBucket, downloadFromBucket
+
 def runEvotuneThread(requestBody: RequestEvotuneBody):
     try:
         print("Start Evotune Thread")
 
-        # get train set 
+        # get train set and validation set
         # requestBody.dataset_url
-        sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
-
-        # get validation set
-        # requestBody.dataset_url
-        holdoutSequences = [
-            "HASTA",
-            "VISTA",
-            "ALAVA",
-            "LIMED",
-            "HAST",
-            "HASVALTA",
-        ] * 5
+        sequences = getSequencesFromDB("sequence", requestBody.job_id, requestBody.sequence_path)
 
         init_fun, apply_fun = mlstm64()
         # The input_shape is always going to be (-1, 26),
@@ -34,20 +27,22 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         # n_epochs_config = {"low": 1, "high": 1}
         # lr_config = {"low": 1e-5, "high": 1e-3}
         study, evotuned_params = evotune(
-            sequences=sequences,
+            sequences=sequences["sequences"],
             model_func=apply_fun,
             params=inital_params,
-            out_dom_seqs=holdoutSequences,
+            out_dom_seqs=sequences["holdoutSequences"],
             n_trials=requestBody.evotune_params.n_trials,
             n_splits=requestBody.evotune_params.n_splits,
             n_epochs_config=requestBody.evotune_params.n_epochs_config,
             learning_rate_config=requestBody.evotune_params.learning_rate_config,
         )
+        print("Training done!")
 
         # Save evotuned_params
-        # store weight in evotuned_weights_url
-        # dump_params(evotuned_params, Path(PROJECT_NAME))
-        # print("Evotuning done! Find output weights in", PROJECT_NAME)
+        model_weights = pkl.dumps(evotuned_params)
+        print("Saving evotuned_params...")
+        uploadToBucket("unirep", requestBody.job_id, requestBody.eUnirep_path+".pkl", model_weights)
+        print("evotuned_params saved!")
 
         print("Evotune Thread finished")
     except Exception as err:

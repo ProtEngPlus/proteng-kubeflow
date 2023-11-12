@@ -1,16 +1,13 @@
-from gcloud.aio.storage import Storage
-import aiohttp
+import os
 
 from google.cloud import storage
+from google.oauth2 import service_account
 
-async def asyncUploadToBucket(bucketName, folderName, fileName, file):
-    async with aiohttp.ClientSession() as session:
-        storage = Storage(service_file='/code/common/creds.json', session=session)
-        status = await storage.upload(bucketName, folderName+"/"+fileName, file)
-        return status['selfLink']
+path_to_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
     
 def createBucket(bucketName, storageClass='STANDARD', location='US-CENTRAL1'):
-    storage_client = storage.Client.from_service_account_json('/code/common/creds.json')
+    credentials = service_account.Credentials.from_service_account_info(path_to_creds)
+    storage_client = storage.Client(credentials=credentials)
 
     bucket = storage_client.bucket(bucketName)
     bucket.storage_class = storageClass
@@ -20,7 +17,8 @@ def createBucket(bucketName, storageClass='STANDARD', location='US-CENTRAL1'):
     return f'Bucket {bucket.name} created with storage class {bucket.storage_class} in {bucket.location}.'
 
 def uploadToBucket(bucketName, folderName, fileName, file):
-    storage_client = storage.Client.from_service_account_json('/code/common/creds.json')
+    credentials = service_account.Credentials.from_service_account_file(path_to_creds)
+    storage_client = storage.Client(credentials=credentials)
 
     bucket = storage_client.bucket(bucketName)
     blob = bucket.blob(folderName+"/"+fileName)
@@ -29,7 +27,8 @@ def uploadToBucket(bucketName, folderName, fileName, file):
     return f'File {fileName} uploaded to {bucketName}.'
 
 def downloadFromBucket(bucketName, folderName, fileName):
-    storage_client = storage.Client.from_service_account_json('/code/common/creds.json')
+    credentials = service_account.Credentials.from_service_account_file(path_to_creds)
+    storage_client = storage.Client(credentials=credentials)
 
     bucket = storage_client.bucket(bucketName)
     blob = bucket.blob(folderName+"/"+fileName)
