@@ -1,6 +1,6 @@
 from common.db import downloadFromBucket
 
-def getSequencesFromDB(bucketName, folderName, fileName):
+def getSequencesFromDB(bucketName, fileName):
     # TODO: implement
     # sequences = downloadFromBucket(bucketName, folderName, fileName)
     sequences = {

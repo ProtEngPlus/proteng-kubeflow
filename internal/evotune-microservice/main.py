@@ -20,14 +20,6 @@ def bucketCreation():
     print("bucket created")
     return "success"
 
-@app.get("/evotune")
-def get_weights():
-    print("----------------------------------------------------------")
-    print("getting evotuned_params...")
-    print(downloadFromBucket("unirep", "123", "1.pkl"))
-    print("evotuned_params downloaded")
-    return "success"
-
 @app.post("/evotune")
 def requestEvotune(requestBody: RequestEvotuneBody):
     print("----------------------------------------------------------")

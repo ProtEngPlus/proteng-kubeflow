@@ -16,7 +16,7 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
 
         # get train set and validation set
         # requestBody.dataset_url
-        sequences = getSequencesFromDB("sequence", requestBody.job_id, requestBody.sequence_path)
+        sequences = getSequencesFromDB("sequence", requestBody.job_id)
 
         init_fun, apply_fun = mlstm64()
         # The input_shape is always going to be (-1, 26),
@@ -41,7 +41,7 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         # Save evotuned_params
         model_weights = pkl.dumps(evotuned_params)
         print("Saving evotuned_params...")
-        uploadToBucket("unirep", requestBody.job_id, requestBody.eUnirep_path+".pkl", model_weights)
+        uploadToBucket("unirep", requestBody.job_id+".pkl", model_weights)
         print("evotuned_params saved!")
 
         print("Evotune Thread finished")

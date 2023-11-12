@@ -13,20 +13,20 @@ def createBucket(bucketName, storageClass='STANDARD', location='US-CENTRAL1'):
 
     return f'Bucket {bucket.name} created with storage class {bucket.storage_class} in {bucket.location}.'
 
-def uploadToBucket(bucketName, folderName, fileName, file):
+def uploadToBucket(bucketName, fileName, file):
     storage_client = getStorageClient()
 
     bucket = storage_client.bucket(bucketName)
-    blob = bucket.blob(folderName+"/"+fileName)
+    blob = bucket.blob(fileName)
     blob.upload_from_string(file)
 
     return f'File {fileName} uploaded to {bucketName}.'
 
-def downloadFromBucket(bucketName, folderName, fileName):
+def downloadFromBucket(bucketName, fileName):
     storage_client = getStorageClient()
 
     bucket = storage_client.bucket(bucketName)
-    blob = bucket.blob(folderName+"/"+fileName)
+    blob = bucket.blob(fileName)
 
     return blob.download_as_string()
 
