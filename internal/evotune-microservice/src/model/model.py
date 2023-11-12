@@ -16,6 +16,6 @@ class EvotuneParams(BaseModel):
 
 class RequestEvotuneBody(BaseModel):
     job_id: str
-    dataset_url: HttpUrl
-    evotuned_weights_url: HttpUrl
+    sequence_path: str
+    eUnirep_path: str
     evotune_params: EvotuneParams

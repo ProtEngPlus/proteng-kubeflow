@@ -1,36 +1,32 @@
-
 import threading
 import sys
 sys.path.append("../")
+from dotenv import load_dotenv
+load_dotenv()
+import os
 
 from fastapi import FastAPI
 from aiofile import AIOFile
 
+from common.db import createBucket, uploadToBucket, downloadFromBucket
 from src.model.model import RequestEvotuneBody
 from src.service.train import runEvotuneThread
 
-from common.db import createBucket, uploadToBucket, downloadFromBucket, asyncUploadToBucket
-
 app = FastAPI()
 
-@app.get("/test")
-async def read_root():
-    async with AIOFile("./src/data/example_data.txt", mode="r") as afp:
-        f = await afp.read()
-        url = asyncUploadToBucket("unirep", "test", "test.txt", f)
-        return url
-    
 @app.get("/createBucket")
-def createBucketAPI():
-    return createBucket("unirep")
+def bucketCreation():
+    print("----------------------------------------------------------")
+    print("creating bucket...")
+    createBucket("unirep")
+    print("bucket created")
 
-@app.get("/uploadToBucket")
-def uploadToBucketAPI():
-    return uploadToBucket("unirep", "test", "test.txt", "test")
-
-@app.get("/downloadFromBucket")
-def downloadFromBucketAPI():
-    return downloadFromBucket("unirep", "test", "test.txt")
+@app.get("/evotune")
+def get_weights():
+    print("----------------------------------------------------------")
+    print("getting evotuned_params...")
+    downloadFromBucket("unirep", "123", "1.pkl")
+    return "success"
 
 @app.post("/evotune")
 def requestEvotune(requestBody: RequestEvotuneBody):
