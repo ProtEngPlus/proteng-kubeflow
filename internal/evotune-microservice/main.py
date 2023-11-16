@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from common.db import createBucket, downloadFromBucket
 from src.model.model import RequestEvotuneBody
-from src.service.train import runEvotuneThread
+from src.service.thread import runEvotuneThread
 
 app = FastAPI()
 

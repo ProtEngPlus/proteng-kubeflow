@@ -14,8 +14,16 @@ class EvotuneParams(BaseModel):
     n_epochs_config: EpochsConfig | None = {"low":1, "high":1}
     learning_rate_config: LrConfig | None = {"low":1e-5, "high":1e-3}
 
+class ArtifactPath(BaseModel):
+    bucket_name: str
+    path: str
+
+class ArtifactMap(BaseModel):
+    blast: ArtifactPath
+
 class RequestEvotuneBody(BaseModel):
     job_id: str
-    sequence_path: str
-    eUnirep_path: str
-    evotune_params: EvotuneParams
+    input: str
+    config: EvotuneParams
+    artifact: ArtifactMap
+    stages: list[str]
