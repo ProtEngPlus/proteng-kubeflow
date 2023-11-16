@@ -59,6 +59,5 @@ class BlastParams(BaseModel):
 
 class RequestBody(BaseModel):
     job_id: str
-    running_id: str
     random_state: Optional[int] = 2023
     blast_params: BlastParams
