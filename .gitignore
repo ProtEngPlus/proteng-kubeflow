@@ -8,3 +8,4 @@ env/
 blast_result*
 tmp/
 creds.json
+**/__pycache__/
