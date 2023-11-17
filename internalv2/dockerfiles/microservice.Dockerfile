@@ -6,9 +6,9 @@ WORKDIR /code
 
 COPY . ./microservice
 
-RUN pip install --no-cache-dir --upgrade -r libs/common.requirements.txt
+RUN pip install --no-cache-dir --upgrade -r ./libs/common.requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r libs/${SERVICE_NAME}.requirements.txt
+RUN pip install --no-cache-dir --upgrade -r ./libs/${SERVICE_NAME}.requirements.txt
 
 WORKDIR /code/microservice
 
