@@ -8,9 +8,9 @@ uvicorn cmd.example_microservice:app --host 0.0.0.0 --port 8080
 ## Docker
 ### build docker image
 same dockerfile, just change the build arg
-```
-docker build -t example-service -f ./internalv2/dockerfiles/microservice.Dockerfile --build-arg="SERVICE_NAME=<example-service>" ./internalv2
 ```bash
+docker build -t example-service -f ./internalv2/dockerfiles/microservice.Dockerfile --build-arg="SERVICE_NAME=<example-service>" ./internalv2
+```
 or
 ```bash
 cd internalv2
