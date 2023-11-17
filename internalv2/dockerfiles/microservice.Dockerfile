@@ -6,11 +6,11 @@ WORKDIR /code
 
 COPY . ./microservice
 
+WORKDIR /code/microservice
+
 RUN pip install --no-cache-dir --upgrade -r ./libs/common.requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r ./libs/${SERVICE_NAME}.requirements.txt
-
-WORKDIR /code/microservice
 
 ENV SERVICE_NAME=${SERVICE_NAME}
 
