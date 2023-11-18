@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir --upgrade -r microservice/requirements.txt
 
 WORKDIR /code/microservice
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8021"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

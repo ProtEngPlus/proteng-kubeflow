@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import threading
 import json
-from common.db import createBucket, uploadToBucket, downloadFromBucket
+from src.common.db import createBucket, uploadToBucket, downloadFromBucket
 
 
 def run_blast_thread(blast_params, job_id, random_state):
