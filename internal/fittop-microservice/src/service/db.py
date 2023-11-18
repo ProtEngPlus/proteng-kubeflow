@@ -40,9 +40,6 @@ def getStorageClient():
         "client_id": os.environ.get('CLIENT_ID'),
         "token_uri": os.environ.get('TOKEN_URI'),
     }
-    print(creds)
-    print("os",os)
-    print("environ",os.environ)
     credentials = service_account.Credentials.from_service_account_info(creds)
     storage_client = storage.Client(credentials=credentials)
     return storage_client

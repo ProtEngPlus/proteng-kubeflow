@@ -123,16 +123,16 @@ def do_top_model(PARAMS = ['model_weights.pkl']):
     #  print(PARAMS)
     seqs = load_seqs(data,PARAMS=PARAMS)
     print('load seqs ok')
-    # top_model = do_ridge_regression(seqs)
-    # print('ridge regress ok')
-    # print(top_model)
-    # model_data = pkl.dumps(top_model)
-    # bucket_name = "fittop"
-    # model_filename = 'test1.pkl'
-    # upload_result = uploadToBucket(bucket_name, model_filename, model_data)
-    # print(upload_result)
+    top_model = do_ridge_regression(seqs)
+    print('ridge regress ok')
+    print(top_model)
+    model_data = pkl.dumps(top_model)
+    bucket_name = "fittop"
+    model_filename = 'test1.pkl'
+    upload_result = uploadToBucket(bucket_name, model_filename, model_data)
+    print(upload_result)
     # ------------------------------------------------------------
     # param= pkl.loads(downloadFromBucket("fittop", "test1.pkl"))
     # print(param)
 
-    # return top_model
+    return top_model
