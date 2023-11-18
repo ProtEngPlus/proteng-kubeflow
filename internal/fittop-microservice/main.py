@@ -6,6 +6,9 @@ import pandas as pd
 from typing import List, Optional
 import threading
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.model.model import requestTopModelBody
 from src.service.run_top_model import do_top_model
 app = FastAPI()
