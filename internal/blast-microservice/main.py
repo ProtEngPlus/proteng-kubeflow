@@ -14,7 +14,7 @@ load_dotenv()
 import threading
 import subprocess  # Import subprocess module
 
-from src.model.model import RequestBody
+from src.model.model import RequestBlastBody, BlastParams
 from src.service.run_blast import run_blast_thread
 
 from common.db import (
@@ -45,11 +45,13 @@ def downloadFromBucketAPI(bucketName, fileName):
 
 
 @app.post("/blast")
-async def run_blast(requestBody: RequestBody):
+async def run_blast(requestBody: RequestBlastBody):
     # Extract parameters from the request body
-    blast_params = requestBody.blast_params
+    blast_params: BlastParams = requestBody.config
+    blast_params.sequence = requestBody.input
     job_id = requestBody.job_id
-    random_state = requestBody.random_state
+    random_state = requestBody.config.randomstate
+    del blast_params.randomstate
     try:
         # Create and start the BLAST thread using the function from the imported module
         blast_thread = threading.Thread(

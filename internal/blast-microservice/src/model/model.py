@@ -7,7 +7,7 @@ NCBI_BLAST_URL = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
 class BlastParams(BaseModel):
     program: str
     database: str
-    sequence: str
+    sequence: Optional[str] = ""
     url_base: Optional[str] = NCBI_BLAST_URL
     auto_format: Optional[bool] = None
     composition_based_statistics: Optional[str] = None
@@ -55,9 +55,11 @@ class BlastParams(BaseModel):
     template_length: Optional[int] = None
     username: Optional[str] = "blast"
     password: Optional[str] = None
+    randomstate: Optional[str] = 2023
 
 
-class RequestBody(BaseModel):
+class RequestBlastBody(BaseModel):
     job_id: str
-    random_state: Optional[int] = 2023
-    blast_params: BlastParams
+    input: str
+    config: BlastParams
+    meta: list[str]
