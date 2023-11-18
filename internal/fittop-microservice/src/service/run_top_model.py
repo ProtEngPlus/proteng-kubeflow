@@ -2,10 +2,13 @@ from jax_unirep import get_reps, fit
 from jax_unirep.utils import load_params
 import pandas as pd
 import numpy as np
+import pickle as pkl
 
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.linear_model import RidgeCV, LinearRegression, HuberRegressor
 import warnings
+
+from .db import downloadFromBucket,uploadToBucket
 warnings.filterwarnings('ignore')
 
 # https://github.com/ElArkk/jax-unirep/blob/e3d756011fd539c803c669495b5c20357c47f661/jax_unirep/utils.py#L56
@@ -22,10 +25,10 @@ def load_seqs(seqs_df, PARAMS = [None]):
 
     for param in PARAMS:
         # append path to param unless unirep (no param)
-        if param == 'one_hot':
-            print('getting reps for one hot')
+        # if param == 'one_hot':
+            # print('getting reps for one hot')
             # name = 'one_hot'
-            continue
+            # continue
             # onehot = multi_onehot(seqs_df.sequence)
             # feat_cols = ['feat' + str(j) for j in range(1, onehot.shape[1] + 1)]
             # this_df = pd.DataFrame(onehot, columns=feat_cols)
@@ -36,15 +39,17 @@ def load_seqs(seqs_df, PARAMS = [None]):
 
             # continue
 
-        elif param is None:
-            name = 'unirep'
+        # elif param is None:
+        #     name = 'unirep'
 
-        else:
-            name = param
-            # param = load_params(PATH + '/src/data/')
-            param = load_params(PATH + '/src/data/')[1]
-            # print(param)
-
+        # else:
+        name = param
+        # param = load_params(PATH + '/src/data/')
+        # param = load_params(PATH + '/src/data/')[1]
+        param= pkl.loads(downloadFromBucket("unirep", "123/1.pkl"))[1]
+        # print(len(param))
+        # print(len(param[0]))
+        # ------------------------------------------- 
         print('getting reps for', name)
 
         # get 1st sequence
@@ -113,13 +118,21 @@ def do_ridge_regression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_R
     return model
 
 def do_top_model(PARAMS = ['model_weights.pkl']):
-   data = load_data()
-   print('load data ok')
-  #  print(PARAMS)
-   seqs = load_seqs(data,PARAMS=PARAMS)
-   print('load seqs ok')
-   top_model = do_ridge_regression(seqs)
-   print('ridge regress ok')
-   print(top_model)
-   dump(top_model, 'ridgecv_model.joblib')
-   return top_model
+    data = load_data()
+    print('load data ok')
+    #  print(PARAMS)
+    seqs = load_seqs(data,PARAMS=PARAMS)
+    print('load seqs ok')
+    # top_model = do_ridge_regression(seqs)
+    # print('ridge regress ok')
+    # print(top_model)
+    # model_data = pkl.dumps(top_model)
+    # bucket_name = "fittop"
+    # model_filename = 'test1.pkl'
+    # upload_result = uploadToBucket(bucket_name, model_filename, model_data)
+    # print(upload_result)
+    # ------------------------------------------------------------
+    # param= pkl.loads(downloadFromBucket("fittop", "test1.pkl"))
+    # print(param)
+
+    # return top_model
