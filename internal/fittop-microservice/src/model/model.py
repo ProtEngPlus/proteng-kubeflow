@@ -4,5 +4,5 @@ class Protein(BaseModel):
     sequence: str
     fitness: float
 
-class requestTopModelBody(BaseModel):
+class RequestTopModelBody(BaseModel):
     proteins: list[Protein]

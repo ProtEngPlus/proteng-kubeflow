@@ -9,8 +9,8 @@ import threading
 from dotenv import load_dotenv
 load_dotenv()
 
-from src.model.model import requestTopModelBody
-from src.service.run_top_model import do_top_model
+from src.model.model import RequestTopModelBody
+from src.service.run_top_model import doFitTop
 app = FastAPI()
 
 
@@ -19,13 +19,14 @@ async def root():
     return {"message": "Hello World"}   
 
 @app.post("/top-model")
-def request_top_model():
+def requestTopModel(requestBody: RequestTopModelBody):
 # def request_top_model(requestBody: requestTopModelBody):
     # print(requestBody)
     print('request do top model')
+    print(requestBody)
     try:
         # Create and start the BLAST thread
-        topModelThread = threading.Thread(target=do_top_model, args=())
+        topModelThread = threading.Thread(target=doFitTop, args=())
         topModelThread.start()
 
         return {"message": "Start Top Model Thread"}
@@ -34,4 +35,4 @@ def request_top_model():
     # do_top_model(PARAMS=[None])
     # do_top_model(PARAMS=['one_hot',None,'model.pkl'])
 
-request_top_model()
+requestTopModel()

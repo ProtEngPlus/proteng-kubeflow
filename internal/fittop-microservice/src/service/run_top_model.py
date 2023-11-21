@@ -16,9 +16,9 @@ from joblib import dump
 
 from .top_model_utils import PATH,read_fasta,read_labeled_data,save_reps,read_reps,aa_to_int,get_int_to_aa,_one_hot,aa_seq_to_int,aa_seq_to_onehot,multi_onehot,distance_matrix,confusion_matrix_loss
 
-def load_data():
+def loadData():
    return pd.DataFrame(read_labeled_data('example'), columns = ['sequence', 'fitness'])
-def load_seqs(seqs_df, PARAMS = [None]):
+def loadSeqs(seqs_df, PARAMS = [None]):
     N_seqs = len(seqs_df)
     N_BATCHES = min(max(6, N_seqs // 500), N_seqs)
     BATCH_LEN = int(np.ceil(N_seqs / N_BATCHES))
@@ -72,7 +72,7 @@ def load_seqs(seqs_df, PARAMS = [None]):
             this_df = pd.concat([this_df.reset_index(drop=True), this_unirep_df.reset_index(drop=True)]).reset_index(
                 drop=True)
     return this_df
-def do_ridge_regression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_RAND_BATCHES=20, WT_FIT=0.63481905, ALPHA=0.01):
+def doRidgeRegression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_RAND_BATCHES=20, WT_FIT=0.63481905, ALPHA=0.01):
     batch_level = []
     for TRAIN_BATCH_SIZE in TRAIN_BATCH_SIZES:
         HOLDOUT_BATCH_SIZE = TRAIN_BATCH_SIZE * 10
@@ -117,13 +117,13 @@ def do_ridge_regression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_R
 
     return model
 
-def do_top_model(PARAMS = ['model_weights.pkl']):
-    data = load_data()
+def doFitTop(PARAMS = ['model_weights.pkl']):
+    data = loadData()
     print('load data ok')
     #  print(PARAMS)
-    seqs = load_seqs(data,PARAMS=PARAMS)
+    seqs = loadSeqs(data,PARAMS=PARAMS)
     print('load seqs ok')
-    top_model = do_ridge_regression(seqs)
+    top_model = doRidgeRegression(seqs)
     print('ridge regress ok')
     print(top_model)
     model_data = pkl.dumps(top_model)
