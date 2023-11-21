@@ -34,8 +34,8 @@ def run_blast_thread(blast_params, job_id, random_state):
 
         # Create a dictionary to store the results
         results = {
-            "Train Set": train_set,
-            "Out Domain Validation Set": out_domain_val_set,
+            "train_set": train_set,
+            "out_domain_val_set": out_domain_val_set,
         }
         # Convert the results to a JSON string
         results_json = json.dumps(results)
