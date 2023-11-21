@@ -8,71 +8,46 @@ from sklearn.model_selection import train_test_split, KFold
 from sklearn.linear_model import RidgeCV, LinearRegression, HuberRegressor
 import warnings
 
-from .db import downloadFromBucket,uploadToBucket
+from src.service.db import downloadFromBucket,uploadToBucket
 warnings.filterwarnings('ignore')
 
 # https://github.com/ElArkk/jax-unirep/blob/e3d756011fd539c803c669495b5c20357c47f661/jax_unirep/utils.py#L56
 from joblib import dump
 
-from .top_model_utils import PATH,read_fasta,read_labeled_data,save_reps,read_reps,aa_to_int,get_int_to_aa,_one_hot,aa_seq_to_int,aa_seq_to_onehot,multi_onehot,distance_matrix,confusion_matrix_loss
+from src.service.top_model_utils import PATH,read_fasta,read_labeled_data,save_reps,read_reps,aa_to_int,get_int_to_aa,_one_hot,aa_seq_to_int,aa_seq_to_onehot,multi_onehot,distance_matrix,confusion_matrix_loss
+from src.model.model import RequestFitTopBody
 
 def loadData():
    return pd.DataFrame(read_labeled_data('example'), columns = ['sequence', 'fitness'])
-def loadSeqs(seqs_df, PARAMS = [None]):
+def loadSeqs(seqs_df,bucket_name,model_path):
     N_seqs = len(seqs_df)
     N_BATCHES = min(max(6, N_seqs // 500), N_seqs)
     BATCH_LEN = int(np.ceil(N_seqs / N_BATCHES))
 
-    for param in PARAMS:
-        # append path to param unless unirep (no param)
-        # if param == 'one_hot':
-            # print('getting reps for one hot')
-            # name = 'one_hot'
-            # continue
-            # onehot = multi_onehot(seqs_df.sequence)
-            # feat_cols = ['feat' + str(j) for j in range(1, onehot.shape[1] + 1)]
-            # this_df = pd.DataFrame(onehot, columns=feat_cols)
-            # this_df.insert(0, "sequence", seqs_df.sequence)
-            # this_df.insert(1, "fitness", seqs_df.fitness)
+    param= pkl.loads(downloadFromBucket(bucket_name, model_path))[1]
 
-            # save_reps(this_df, gdrive_path + 'one_hot')
-
-            # continue
-
-        # elif param is None:
-        #     name = 'unirep'
-
-        # else:
-        name = param
-        # param = load_params(PATH + '/src/data/')
-        # param = load_params(PATH + '/src/data/')[1]
-        param= pkl.loads(downloadFromBucket("unirep", "123/1.pkl"))[1]
-        # print(len(param))
-        # print(len(param[0]))
-        # ------------------------------------------- 
-        print('getting reps for', name)
-
-        # get 1st sequence
-        reps, _, _ = get_reps(seqs_df.sequence[0], params=param,mlstm_size=64)
-        feat_cols = ['feat' + str(j) for j in range(1, reps.shape[1] + 1)]
-        this_df = pd.DataFrame(reps, columns=feat_cols)
-        this_df.insert(0, "sequence", seqs_df.sequence[0])
-        this_df.insert(1, "fitness", seqs_df.fitness[0])
-        for i in range(N_BATCHES):
-            this_unirep, _, _ = get_reps(
-                seqs_df.sequence[(1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)],
-                params=param,mlstm_size=64)
-            this_unirep_df = pd.DataFrame(this_unirep, columns=feat_cols)
-            this_unirep_df.insert(0, "sequence",
-                                  seqs_df.sequence[(1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)].reset_index(
-                                      drop=True))
-            this_unirep_df.insert(1, "fitness",
-                                  seqs_df.fitness[
-                                  (1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)].reset_index(drop=True))
-            this_df = pd.concat([this_df.reset_index(drop=True), this_unirep_df.reset_index(drop=True)]).reset_index(
-                drop=True)
+    # get 1st sequence
+    reps, _, _ = get_reps(seqs_df.sequence[0], params=param,mlstm_size=64)
+    feat_cols = ['feat' + str(j) for j in range(1, reps.shape[1] + 1)]
+    this_df = pd.DataFrame(reps, columns=feat_cols)
+    this_df.insert(0, "sequence", seqs_df.sequence[0])
+    this_df.insert(1, "fitness", seqs_df.fitness[0])
+    for i in range(N_BATCHES):
+        this_unirep, _, _ = get_reps(
+            seqs_df.sequence[(1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)],
+            params=param,mlstm_size=64)
+        this_unirep_df = pd.DataFrame(this_unirep, columns=feat_cols)
+        this_unirep_df.insert(0, "sequence",
+                                seqs_df.sequence[(1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)].reset_index(
+                                    drop=True))
+        this_unirep_df.insert(1, "fitness",
+                                seqs_df.fitness[
+                                (1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)].reset_index(drop=True))
+        this_df = pd.concat([this_df.reset_index(drop=True), this_unirep_df.reset_index(drop=True)]).reset_index(
+            drop=True)
     return this_df
-def doRidgeRegression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_RAND_BATCHES=20, WT_FIT=0.63481905, ALPHA=0.01):
+
+def doRidgeRegression(this_df, TRAIN_BATCH_SIZES, N_BATCH, N_RAND_BATCHES, WT_FIT, ALPHA):
     batch_level = []
     for TRAIN_BATCH_SIZE in TRAIN_BATCH_SIZES:
         HOLDOUT_BATCH_SIZE = TRAIN_BATCH_SIZE * 10
@@ -117,13 +92,23 @@ def doRidgeRegression(this_df, TRAIN_BATCH_SIZES=[24, 64, 96], N_BATCH=20, N_RAN
 
     return model
 
-def doFitTop(PARAMS = ['model_weights.pkl']):
+def doFitTop(requestBody: RequestFitTopBody):
     data = loadData()
     print('load data ok')
     #  print(PARAMS)
-    seqs = loadSeqs(data,PARAMS=PARAMS)
+    seqs = loadSeqs(
+        seqs_df=data,
+        bucket_name=requestBody.artifact.unirep.bucket_name,
+        model_path=requestBody.artifact.unirep.path)
     print('load seqs ok')
-    top_model = doRidgeRegression(seqs)
+    top_model = doRidgeRegression(
+        this_df=seqs,
+        TRAIN_BATCH_SIZES=requestBody.config.TRAIN_BATCH_SIZES,
+        N_BATCH=requestBody.config.N_BATCH,
+        N_RAND_BATCHES=requestBody.config.N_RAND_BATCHES,
+        WT_FIT=requestBody.config.WT_FIT,
+        ALPHA=requestBody.config.ALPHA
+    )
     print('ridge regress ok')
     print(top_model)
     model_data = pkl.dumps(top_model)
