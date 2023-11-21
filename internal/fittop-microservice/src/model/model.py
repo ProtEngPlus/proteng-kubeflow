@@ -16,8 +16,8 @@ class UnirepArtifactPath(BaseModel):
     path: str | None = "123/1.pkl"
 
 class ArtifactMap(BaseModel):
+    blast: ArtifactPath
     unirep: UnirepArtifactPath
-    fittop: ArtifactPath
 
 class RequestFitTopBody(BaseModel):
     job_id: str

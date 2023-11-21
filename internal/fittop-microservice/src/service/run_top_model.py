@@ -112,8 +112,8 @@ def doFitTop(requestBody: RequestFitTopBody):
     print('ridge regress ok')
     print(top_model)
     model_data = pkl.dumps(top_model)
-    bucket_name = "fittop"
-    model_filename = 'test1.pkl'
+    bucket_name = "ridgecv"
+    model_filename = requestBody.job_id + '.pkl'
     upload_result = uploadToBucket(bucket_name, model_filename, model_data)
     print(upload_result)
     # ------------------------------------------------------------
