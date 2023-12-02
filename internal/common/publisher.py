@@ -5,8 +5,8 @@ import os
 
 # TODO: Create a persistent connection to RabbitMQ instead
 
-def publishDefaultExchange(rabbitmq_url, queue_name, message):
 
+def publishDefaultExchange(rabbitmq_url, queue_name, message):
     # Create connection and channel
     connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
     channel = connection.channel()
@@ -15,7 +15,7 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
     channel.queue_declare(queue=queue_name)
 
     # Publish message
-    channel.basic_publish(exchange='', routing_key=queue_name, body=message)
+    channel.basic_publish(exchange="", routing_key=queue_name, body=message)
 
     # Close connection
     connection.close()
@@ -34,21 +34,23 @@ class JobUpdateData(BaseModel):
     artifact: Artifact
     error: Optional[str] = ""
 
+
 class JobStatusEventMessage(BaseModel):
     service_name: str
     timestamp: str
     data: JobUpdateData
 
-def publishJobStatusEvent(message: JobStatusEventMessage) :
-    rabbitmq_url = os.environ.get('RABBITMQ_URL')
+
+def publishJobStatusEvent(message: JobStatusEventMessage):
+    rabbitmq_url = os.environ.get("RABBITMQ_URL")
     queue_name = "job_status_event"
     print(rabbitmq_url)
     publishDefaultExchange(rabbitmq_url, queue_name, message.json())
 
-if __name__ == '__main__' :
 
+if __name__ == "__main__":
     # TEST: publishJobStatusEvent
-    
+
     message = JobStatusEventMessage(
         service_name="job",
         timestamp="2021-01-01T00:00:00.000Z",
@@ -56,12 +58,8 @@ if __name__ == '__main__' :
             job_id="job_id",
             stage_id=1,
             status="completed",
-            artifact=Artifact(
-                bucket_name="bucket_name",
-                path="path",
-                url="url"
-            ),
-            error="error"
-        )
+            artifact=Artifact(bucket_name="bucket_name", path="path", url="url"),
+            error="error",
+        ),
     )
     publishJobStatusEvent(message)
