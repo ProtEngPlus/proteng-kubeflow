@@ -2,6 +2,7 @@ import json
 
 from common.db import downloadFromBucket, uploadToBucket
 from src.model.model import RequestEvotuneBody
+from src.const import EVOTUNE_BUCKET_NAME
 
 def getSequencesFromDB(requestBody: RequestEvotuneBody):
     # Download sequence data from Blast Object Storage
@@ -15,5 +16,5 @@ def getSequencesFromDB(requestBody: RequestEvotuneBody):
 
 def uploadEUnirepToDB(filePath, model_weights):
     # Save evotuned_params to Unirep Object Storage
-    uploadToBucket("unirep", filePath+".pkl", model_weights)
+    uploadToBucket(EVOTUNE_BUCKET_NAME, filePath, model_weights)
     return True

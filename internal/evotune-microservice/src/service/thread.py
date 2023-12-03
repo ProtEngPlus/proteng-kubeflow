@@ -1,14 +1,10 @@
 import pickle as pkl
 
-from jax.random import PRNGKey
-from jax_unirep import evotune
-from jax_unirep.evotuning_models import mlstm64
-
 from src.model.model import RequestEvotuneBody
 
 from src.service.db import getSequencesFromDB, uploadEUnirepToDB
 from src.service.train import trainUnirep
-from common.db import uploadToBucket
+from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 
 def runEvotuneThread(requestBody: RequestEvotuneBody):
     try:
@@ -33,13 +29,19 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
 
         # Save model_weights (pkl file) to Unirep Object Storage
         print("Saving evotuned_params...")
-        uploadEUnirepToDB(requestBody.job_id, model_weights)
+        uploadEUnirepToDB(requestBody.job_id+".pkl", model_weights)
         print("evotuned_params saved!")
 
-        # TODO: Send Success Message to Message Queue
+        # Send Success Message to Message Queue
+        print("Sending success message to MQ...")
+        publishCompletedJobStatusToMQ(requestBody.job_id, requestBody.job_id+".pkl")
+        print("Success message sent!")
 
         print("Evotune Thread finished")
     except Exception as err:
-        # TODO: Send Error Message to Message Queue
+        # Send Error Message to Message Queue
+        print("Sending error message to MQ...")
+        publishFailedJobStatusToMQ(requestBody.job_id, requestBody.job_id+".pkl", str(err))
+        print("Error message sent!")
 
         print(f"Unexpected {err=}, {type(err)=}")
