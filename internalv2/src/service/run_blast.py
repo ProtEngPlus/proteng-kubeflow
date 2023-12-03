@@ -3,9 +3,7 @@ import re
 import pandas as pd
 import threading
 import json
-from common.db import createBucket, uploadToBucket, downloadFromBucket
-from common.publisher import *
-from datetime import datetime, timezone
+from src.common.db import createBucket, uploadToBucket, downloadFromBucket
 
 
 def run_blast_thread(blast_params, job_id, random_state):
@@ -36,8 +34,8 @@ def run_blast_thread(blast_params, job_id, random_state):
 
         # Create a dictionary to store the results
         results = {
-            "train_set": train_set,
-            "out_domain_val_set": out_domain_val_set,
+            "Train Set": train_set,
+            "Out Domain Validation Set": out_domain_val_set,
         }
         # Convert the results to a JSON string
         results_json = json.dumps(results)
@@ -46,33 +44,8 @@ def run_blast_thread(blast_params, job_id, random_state):
         # Upload the JSON string directly to the object storage bucket
         upload_status = uploadToBucket("similar_protein", job_id, results_json)
         print(upload_status)
-
-        current_time = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
-
-        message = JobStatusEventMessage(
-            service_name="blast-microservice",
-            timestamp=current_time,
-            data=JobUpdateData(
-                job_id=job_id,
-                stage_id=0,
-                status="COMPLETED",
-                artifact=Artifact(bucket_name="similar_protein", path=job_id),
-            ),
-        )
-        publishJobStatusEvent(message)
-        print("Thread finished")
+        print("Thread finished")  # Print "Thread finished" when the thread is done
     except Exception as err:
         # TODO: Send Error Message to Message Queue
-        current_time = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
-        message = JobStatusEventMessage(
-            service_name="blast-microservice",
-            timestamp=current_time,
-            data=JobUpdateData(
-                job_id=job_id,
-                stage_id=0,
-                status="FAILED",
-                artifact=Artifact(bucket_name="similar_protein", path=job_id),
-                error=err,
-            ),
-        )
+
         print(f"Unexpected {err=}, {type(err)=}")
