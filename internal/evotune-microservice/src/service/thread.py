@@ -19,7 +19,9 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         #       "train_set": ["sequence1", "sequence2", ...],
         #       "out_domain_val_set": ["sequence1", "sequence2", ...]
         #   }
+        print("Getting sequences from DB...")
         sequences = getSequencesFromDB(requestBody)
+        print("Sequences got!")
 
         # Evotune
         print("Start Evotuning...")

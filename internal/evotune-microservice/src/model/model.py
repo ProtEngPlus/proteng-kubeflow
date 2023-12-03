@@ -26,4 +26,9 @@ class RequestEvotuneBody(BaseModel):
     input: str
     config: EvotuneParams
     artifact: ArtifactMap
-    stages: list[str]
+    meta: list[str]
+
+class RequestBucketBody(BaseModel):
+    bucket_name: str
+    file_name: str | None 
+    file: str | None

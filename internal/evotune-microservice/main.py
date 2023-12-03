@@ -6,18 +6,34 @@ load_dotenv()
 
 from fastapi import FastAPI
 
-from common.db import createBucket, downloadFromBucket
-from src.model.model import RequestEvotuneBody
+from common.db import createBucket, downloadFromBucket, uploadToBucket
+from src.model.model import RequestEvotuneBody, RequestBucketBody
 from src.service.thread import runEvotuneThread
 
 app = FastAPI()
 
-@app.get("/createBucket")
-def bucketCreation():
+@app.post("/createBucket")
+def bucketCreation(requestBody: RequestBucketBody):
     print("----------------------------------------------------------")
     print("creating bucket...")
-    createBucket("unirep")
+    createBucket(requestBody.bucket_name)
     print("bucket created")
+    return "success"
+
+@app.post("/downloadFromBucket")
+def bucketDownload(requestBody: RequestBucketBody):
+    print("----------------------------------------------------------")
+    print("downloading from bucket...")
+    print(downloadFromBucket(requestBody.bucket_name, requestBody.file_name))
+    print("downloaded")
+    return "success"
+
+@app.post("/uploadToBucket")
+def bucketUpload(requestBody: RequestBucketBody):
+    print("----------------------------------------------------------")
+    print("uploading to bucket...")
+    uploadToBucket(requestBody.bucket_name, requestBody.file_name, requestBody.file)
+    print("uploaded")
     return "success"
 
 @app.post("/evotune")
