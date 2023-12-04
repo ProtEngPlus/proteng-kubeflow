@@ -4,7 +4,8 @@ WORKDIR /code
 
 COPY /fittop-microservice ./microservice
 
-COPY /common ./common
+COPY /common ./microservice/common
+# COPY /common ./common
 
 RUN pip install --no-cache-dir --upgrade -r microservice/requirements.txt
 
