@@ -72,7 +72,8 @@ def run_blast_thread(blast_params, job_id, random_state):
                 stage_id=0,
                 status="FAILED",
                 artifact=Artifact(bucket_name="similar_protein", path=job_id),
-                error=err,
+                error=str(err),
             ),
         )
+        publishJobStatusEvent(message)
         print(f"Unexpected {err=}, {type(err)=}")
