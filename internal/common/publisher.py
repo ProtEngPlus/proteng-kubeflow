@@ -12,7 +12,7 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
     channel = connection.channel()
 
     # Declare queue
-    channel.queue_declare(queue=queue_name)
+    channel.queue_declare(queue=queue_name, durable=True)
 
     # Publish message
     channel.basic_publish(exchange="", routing_key=queue_name, body=message)
@@ -49,7 +49,6 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
         publishDefaultExchange(rabbitmq_url, queue_name, message.json())
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
-        raise err
 
 
 if __name__ == "__main__":
