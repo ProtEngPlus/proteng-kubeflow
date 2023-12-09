@@ -15,7 +15,7 @@ PATH = '.'
 # read FASTA file:
 # input: file name
 # output: names and sequences in the file as an array of dim-2 arrays [name, sequence].
-def read_fasta(name):
+def readFasta(name):
     fasta_seqs = SeqIO.parse(open(gdrive_path + name + '.fasta.txt'),'fasta')
     data = []
     for fasta in fasta_seqs:
@@ -26,7 +26,7 @@ def read_fasta(name):
 # read sequence text file:
 # input: file name
 # output: names and sequences in the file as an array of dim-2 arrays [name, sequence].
-def read_labeled_data(name):
+def readLabeledData(name):
     seqs = np.loadtxt(PATH  + "/src/data/" + name + '_seqs.txt', dtype='str')
 
     fitnesses = np.loadtxt(PATH + "/src/data/" + name + '_fitness.txt')
@@ -37,17 +37,17 @@ def read_labeled_data(name):
     return data
 
 # save represented dataframe of features as feather
-def save_reps(df, path):
+def saveReps(df, path):
   feather.write_dataframe(df, path + '.feather')
   print(path + '.feather', 'saved!')
 
 
 # read represented dataframe of features as feather
-def read_reps(path):
+def readReps(path):
   return feather.read_dataframe(path + '.feather')
 
 
-aa_to_int = {
+AATOINT = {
   'M':1,
   'R':2,
   'H':3,
@@ -79,36 +79,36 @@ aa_to_int = {
 }
 
 
-def get_int_to_aa():
-  return {value:key for key, value in aa_to_int.items()}
+def getIntToAa():
+  return {value:key for key, value in AATOINT.items()}
 
 
-def _one_hot(x, k, dtype=np.float32):
+def oneHot(x, k, dtype=np.float32):
   # return np.array(x[:, None] == np.arange(k), dtype)
   return np.array(x[:, None] == np.arange(k))
 
 
-def aa_seq_to_int(s):
+def aaSeqToInt(s):
   """Return the int sequence as a list for a given string of amino acids."""
   # Make sure only valid aa's are passed
-  if not set(s).issubset(set(aa_to_int.keys())):
+  if not set(s).issubset(set(AATOINT.keys())):
     raise ValueError(
       f"Unsupported character(s) in sequence found:"
-      f" {set(s).difference(set(aa_to_int.keys()))}"
+      f" {set(s).difference(set(AATOINT.keys()))}"
     )
 
-  return [aa_to_int[a] for a in s]
+  return [AATOINT[a] for a in s]
 
 
-def aa_seq_to_onehot(seq):
-  return 1*np.equal(np.array(aa_seq_to_int(seq))[:,None], np.arange(21)).flatten()
+def aaSeqToOnehot(seq):
+  return 1*np.equal(np.array(aaSeqToInt(seq))[:,None], np.arange(21)).flatten()
 
 
-def multi_onehot(seqs):
-  return np.stack([aa_seq_to_onehot(s) for s in seqs.tolist()])
+def multiOnehot(seqs):
+  return np.stack([aaSeqToOnehot(s) for s in seqs.tolist()])
 
 
-def distance_matrix(N):
+def distanceMatrix(N):
 	distance_matrix = np.zeros((N,N))
 	for i in range(N):
 		for j in range(N):
@@ -118,7 +118,7 @@ def distance_matrix(N):
 	return distance_matrix
 
 
-def confusion_matrix_loss(Y_test,Y_preds_test):
+def confusionMatrixLoss(Y_test,Y_preds_test):
 
   N = len(Y_test)
   Y_rank_matrix = np.zeros((N,N))
@@ -142,7 +142,7 @@ def confusion_matrix_loss(Y_test,Y_preds_test):
   return loss
 
 def loadData():
-   return pd.DataFrame(read_labeled_data('example'), columns = ['sequence', 'fitness'])
+   return pd.DataFrame(readLabeledData('example'), columns = ['sequence', 'fitness'])
 def loadSeqs(seqs_df,bucket_name,model_path):
     N_seqs = len(seqs_df)
     N_BATCHES = min(max(6, N_seqs // 500), N_seqs)
@@ -171,43 +171,43 @@ def loadSeqs(seqs_df,bucket_name,model_path):
             drop=True)
     return this_df
 
-def doRidgeRegression(this_df, TRAIN_BATCH_SIZES, N_BATCH, N_RAND_BATCHES, WT_FIT, ALPHA):
+def doRidgeRegression(this_df, train_batch_sizes, n_batch, n_rand_batches, wt_fit, alpha):
     batch_level = []
-    for TRAIN_BATCH_SIZE in TRAIN_BATCH_SIZES:
-        HOLDOUT_BATCH_SIZE = TRAIN_BATCH_SIZE * 10
+    for train_batch_size in train_batch_sizes:
+        holdout_batch_size = train_batch_size * 10
 
         params_level = []
         df = this_df
 
         scores_level = []
-        for i in range(N_BATCH):
+        for i in range(n_batch):
             np.random.seed(42 * (i + 2))
             rndperm = np.random.permutation(df.shape[0])
 
-            X = df.loc[rndperm[0:TRAIN_BATCH_SIZE], df.columns[2:]]
-            Y = df.loc[rndperm[0:TRAIN_BATCH_SIZE], "fitness"]
+            X = df.loc[rndperm[0:train_batch_size], df.columns[2:]]
+            Y = df.loc[rndperm[0:train_batch_size], "fitness"]
 
-            X_holdout = df.loc[rndperm[TRAIN_BATCH_SIZE:TRAIN_BATCH_SIZE + HOLDOUT_BATCH_SIZE], df.columns[2:]]
-            Y_holdout = df.loc[rndperm[TRAIN_BATCH_SIZE:TRAIN_BATCH_SIZE + HOLDOUT_BATCH_SIZE], "fitness"]
+            X_holdout = df.loc[rndperm[train_batch_size:train_batch_size + holdout_batch_size], df.columns[2:]]
+            Y_holdout = df.loc[rndperm[train_batch_size:train_batch_size + holdout_batch_size], "fitness"]
 
             kfold = KFold(n_splits=10, shuffle=True)
 
-            model = RidgeCV(alphas=[ALPHA], cv=kfold)
+            model = RidgeCV(alphas=[alpha], cv=kfold)
 
             model.fit(X, Y)
 
             Y_preds = model.predict(X_holdout)
 
-            usorted = np.array(Y_holdout)[np.argsort(Y_preds)][::-1][:int(HOLDOUT_BATCH_SIZE / 10)]
+            usorted = np.array(Y_holdout)[np.argsort(Y_preds)][::-1][:int(holdout_batch_size / 10)]
 
-            usorted_count = np.sum([1 if i > WT_FIT else 0 for i in usorted])
+            usorted_count = np.sum([1 if i > wt_fit else 0 for i in usorted])
 
             avg_rand_count = 0
-            for k in range(N_RAND_BATCHES):
+            for k in range(n_rand_batches):
                 np.random.seed(42 * (i + 2) + (1 + k))
-                rand_Y = np.random.permutation(np.array(Y_holdout))[:int(HOLDOUT_BATCH_SIZE / 10)]
-                avg_rand_count += np.sum([1 if i > WT_FIT else 0 for i in rand_Y])
-            avg_rand_count /= N_RAND_BATCHES
+                rand_Y = np.random.permutation(np.array(Y_holdout))[:int(holdout_batch_size / 10)]
+                avg_rand_count += np.sum([1 if i > wt_fit else 0 for i in rand_Y])
+            avg_rand_count /= n_rand_batches
 
             scores_level.append(usorted_count / avg_rand_count)
 

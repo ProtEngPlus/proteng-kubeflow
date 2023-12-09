@@ -1,11 +1,11 @@
 from pydantic import BaseModel, HttpUrl
 
 class FitTopParams(BaseModel):
-    TRAIN_BATCH_SIZES: list[int] | None = [24, 64, 96]
-    N_BATCH: int | None = 20
-    N_RAND_BATCHES: int | None = 20
-    WT_FIT: float | None = 0.63481905
-    ALPHA: float | None = 0.01
+    train_batch_sizes: list[int] | None = [24, 64, 96]
+    n_batch: int | None = 20
+    n_rand_batches: int | None = 20
+    wt_fit: float | None = 0.63481905
+    alpha: float | None = 0.01
 
 class ArtifactPath(BaseModel):
     bucket_name: str

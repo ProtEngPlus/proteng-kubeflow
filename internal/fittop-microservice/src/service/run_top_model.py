@@ -24,11 +24,11 @@ def doFitTop(requestBody: RequestFitTopBody):
         print('load seqs ok')
         top_model = doRidgeRegression(
             this_df=seqs,
-            TRAIN_BATCH_SIZES=requestBody.config.TRAIN_BATCH_SIZES,
-            N_BATCH=requestBody.config.N_BATCH,
-            N_RAND_BATCHES=requestBody.config.N_RAND_BATCHES,
-            WT_FIT=requestBody.config.WT_FIT,
-            ALPHA=requestBody.config.ALPHA
+            train_batch_sizes=requestBody.config.train_batch_sizes,
+            n_batch=requestBody.config.n_batch,
+            n_rand_batches=requestBody.config.n_rand_batches,
+            wt_fit=requestBody.config.wt_fit,
+            alpha=requestBody.config.alpha
         )
         print('ridge regress ok')
         print(top_model)
