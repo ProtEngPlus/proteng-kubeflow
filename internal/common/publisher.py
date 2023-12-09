@@ -45,7 +45,11 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
     rabbitmq_url = os.environ.get("RABBITMQ_URL")
     queue_name = "job_status_event"
     print(rabbitmq_url)
-    publishDefaultExchange(rabbitmq_url, queue_name, message.json())
+    try :
+        publishDefaultExchange(rabbitmq_url, queue_name, message.json())
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise err
 
 
 if __name__ == "__main__":
