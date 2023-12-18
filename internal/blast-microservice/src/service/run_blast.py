@@ -6,18 +6,19 @@ import json
 from common.db import createBucket, uploadToBucket, downloadFromBucket
 from common.publisher import *
 from datetime import datetime, timezone
+import time
 
 
-def run_blast_thread(blast_params, job_id, random_state):
+def runBlastThread(blastParams, jobId, randomState):
     try:
         print(
             "Start BLAST Thread"
         )  # Print the "start blast" message when the thread starts
 
         # Run BLAST
-        blast_args = {k: v for k, v in blast_params.dict().items() if v is not None}
-        result_handle = NCBIWWW.qblast(**blast_args)
-        result = result_handle.read()
+        blastArgs = {k: v for k, v in blastParams.dict().items() if v is not None}
+        resultHandle = NCBIWWW.qblast(**blastArgs)
+        result = resultHandle.read()
 
         sequences = re.findall(r"<Hsp_hseq>(.*?)</Hsp_hseq>", result)
         scores = re.findall(r"<Hsp_score>(.*?)</Hsp_score>", result)
@@ -26,52 +27,47 @@ def run_blast_thread(blast_params, job_id, random_state):
         df = pd.DataFrame(data)
 
         # Split the dataframe
-        out_domain_val_set = df.sample(
-            frac=0.1, weights="score", random_state=random_state
-        )
-        train_set = df.drop(out_domain_val_set.index)
+        outDomainValSet = df.sample(frac=0.1, weights="score", random_state=randomState)
+        trainSet = df.drop(outDomainValSet.index)
 
-        out_domain_val_set = out_domain_val_set["sequences"].tolist()
-        train_set = train_set["sequences"].tolist()
+        outDomainValSet = outDomainValSet["sequences"].tolist()
+        trainSet = trainSet["sequences"].tolist()
 
         # Create a dictionary to store the results
         results = {
-            "train_set": train_set,
-            "out_domain_val_set": out_domain_val_set,
+            "train_set": trainSet,
+            "out_domain_val_set": outDomainValSet,
         }
         # Convert the results to a JSON string
-        results_json = json.dumps(results)
+        resultsJson = json.dumps(results)
 
         print("saving...")
         # Upload the JSON string directly to the object storage bucket
-        upload_status = uploadToBucket("similar_protein", job_id, results_json)
+        upload_status = uploadToBucket("similar_protein", jobId, resultsJson)
         print(upload_status)
-
-        current_time = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=current_time,
+            timestamp=time.time(),
             data=JobUpdateData(
-                job_id=job_id,
+                job_id=jobId,
                 stage_id=0,
                 status="COMPLETED",
-                artifact=Artifact(bucket_name="similar_protein", path=job_id),
+                artifact=Artifact(bucket_name="similar_protein", path=jobId),
             ),
         )
         publishJobStatusEvent(message)
         print("Thread finished")
     except Exception as err:
         # TODO: Send Error Message to Message Queue
-        current_time = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=current_time,
+            timestamp=time.time(),
             data=JobUpdateData(
-                job_id=job_id,
+                job_id=jobId,
                 stage_id=0,
                 status="FAILED",
-                artifact=Artifact(bucket_name="similar_protein", path=job_id),
+                artifact=Artifact(bucket_name="similar_protein", path=jobId),
                 error=str(err),
             ),
         )

@@ -55,7 +55,7 @@ class BlastParams(BaseModel):
     template_length: Optional[int] = None
     username: Optional[str] = "blast"
     password: Optional[str] = None
-    randomstate: Optional[str] = 2023
+    random_state: Optional[int] = 2023
 
 
 class RequestBlastBody(BaseModel):

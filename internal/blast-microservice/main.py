@@ -15,7 +15,7 @@ import threading
 import subprocess  # Import subprocess module
 
 from src.model.model import RequestBlastBody, BlastParams
-from src.service.run_blast import run_blast_thread
+from src.service.run_blast import runBlastThread
 
 from common.db import (
     createBucket,
@@ -47,17 +47,17 @@ def downloadFromBucketAPI(bucketName, fileName):
 @app.post("/blast")
 async def run_blast(requestBody: RequestBlastBody):
     # Extract parameters from the request body
-    blast_params: BlastParams = requestBody.config
-    blast_params.sequence = requestBody.input
-    job_id = requestBody.job_id
-    random_state = requestBody.config.randomstate
-    del blast_params.randomstate
+    blastParams: BlastParams = requestBody.config
+    blastParams.sequence = requestBody.input
+    jobId = requestBody.job_id
+    randomState = requestBody.config.random_state
+    del blastParams.random_state
     try:
         # Create and start the BLAST thread using the function from the imported module
-        blast_thread = threading.Thread(
-            target=run_blast_thread, args=(blast_params, job_id, random_state)
+        blastThread = threading.Thread(
+            target=runBlastThread, args=(blastParams, jobId, randomState)
         )
-        blast_thread.start()
+        blastThread.start()
 
         return {"run_blast_thread": "success"}
     except:
