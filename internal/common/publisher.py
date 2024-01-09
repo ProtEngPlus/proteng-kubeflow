@@ -1,6 +1,6 @@
 import pika
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 import os
 
 # TODO: Create a persistent connection to RabbitMQ instead
@@ -33,6 +33,7 @@ class JobUpdateData(BaseModel):
     status: str
     artifact: Artifact
     error: Optional[str] = ""
+    mutation_result: Optional[Dict[str, float]] = {}
 
 
 class JobStatusEventMessage(BaseModel):
