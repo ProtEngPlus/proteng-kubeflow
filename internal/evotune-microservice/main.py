@@ -42,7 +42,7 @@ def requestEvotune(requestBody: RequestEvotuneBody):
     print("requesting evotune service...")
     print(requestBody)
     try:
-        # Create and start the BLAST thread
+        # Create and start the EVOTUNE thread
         evotuneThread = threading.Thread(target=runEvotuneThread, args=(requestBody,))
         evotuneThread.start()
 
