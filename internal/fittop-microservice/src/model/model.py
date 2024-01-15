@@ -1,27 +1,26 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 class FitTopParams(BaseModel):
     train_batch_sizes: list[int] | None = [24, 64, 96]
     n_batch: int | None = 20
-    n_rand_batches: int | None = 20
-    wt_fit: float | None = 0.63481905
     alpha: float | None = 0.01
 
 class ArtifactPath(BaseModel):
     bucket_name: str
     path: str
 
-class UnirepArtifactPath(BaseModel):
-    bucket_name: str | None = 'unirep'
-    path: str | None = "123/1.pkl"
-
 class ArtifactMap(BaseModel):
-    blast: ArtifactPath
-    unirep: UnirepArtifactPath
+    unirep: ArtifactPath
+
+class LabResult(BaseModel):
+    total: int
+    sequences: list[str]
+    scores: list[float]
 
 class RequestFitTopBody(BaseModel):
     job_id: str
     input: str
     config: FitTopParams
     artifact: ArtifactMap
+    lab_result: LabResult
     meta: list[str]
