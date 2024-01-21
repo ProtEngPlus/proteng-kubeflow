@@ -27,7 +27,7 @@ jobs:
           uses: docker/build-push-action@v2
           with:
             context: .
-            file: docerfiles/microservice.Dockerfile
+            file: dockerfiles/microservice.Dockerfile
             push: false
             build-args: |
                 SERVICE_NAME=blast
