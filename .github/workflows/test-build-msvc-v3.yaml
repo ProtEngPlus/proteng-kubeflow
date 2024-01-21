@@ -26,8 +26,8 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internalv2
-            file: ./internalv2/dockerfiles/microservice.Dockerfile
+            context: .
+            file: docerfiles/microservice.Dockerfile
             push: false
             build-args: |
                 SERVICE_NAME=blast
@@ -54,12 +54,12 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internalv2
-            file: ./internalv2/dockerfiles/microservice.Dockerfile
+            context: .
+            file: dockerfiles/microservice.Dockerfile
             build-args: |
                 SERVICE_NAME=evotune
             push: false
-            tags: blast-service:${{ env.SHORT_SHA }}
+            tags: evotune-service:${{ env.SHORT_SHA }}
             cache-from: type=gha
             cache-to: type=gha,mode=max
     fittop-service:
@@ -82,11 +82,40 @@ jobs:
         - name: Build and push
           uses: docker/build-push-action@v2
           with:
-            context: ./internalv2
-            file: ./internalv2/dockerfiles/microservice.Dockerfile
+            context: .
+            file: dockerfiles/microservice.Dockerfile
             build-args: |
                 SERVICE_NAME=fittop
             push: false
-            tags: blast-service:${{ env.SHORT_SHA }}
+            tags: fittop-service:${{ env.SHORT_SHA }}
             cache-from: type=gha
             cache-to: type=gha,mode=max
+    mutation-service:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Set up QEMU
+          uses: docker/setup-qemu-action@v3
+            
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v3
+        
+        - name: Get short commit SHA
+          run: |
+            export SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+            echo "SHORT_SHA=${SHORT_SHA}" >> ${GITHUB_ENV}
+
+        - name: Build and push
+          uses: docker/build-push-action@v2
+          with:
+            context: .
+            file: dockerfiles/microservice.Dockerfile
+            build-args: |
+                SERVICE_NAME=mutation
+            push: false
+            tags: mutation-service:${{ env.SHORT_SHA }}
+            cache-from: type=gha
+            cache-to: type=gha,mode=max
+      
