@@ -9,3 +9,4 @@ blast_result*
 tmp/
 creds.json
 **/__pycache__/
+test.py
