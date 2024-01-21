@@ -9,8 +9,32 @@ class TestStruct(BaseModel):
     c: list
     d: dict
 
-@dsl.component
-def hello_world(name: str, arr: list, dct: dict, x: TestStruct) -> str:
+def my_func(t: TestStruct):
+    print(t)
+    return t.a
+
+@dsl.component(
+    packages_to_install=['pydantic']
+)
+def hello_world(name: str, arr: list, dct: dict, x: dict) -> str:
+    from pydantic import BaseModel
+    class TestStruct(BaseModel):
+        a: int
+        b: str
+        c: list
+        d: dict
+
+    def my_func(t: TestStruct):
+        print(t)
+        return t.a
+    xx = TestStruct(a=0, b="", c=[], d={})
+    try:
+        xx = TestStruct.model_validate(x)
+    except Exception as e:
+        print("ERROR: TestStruct.model_validate failed")
+        print(e)
+        # x = TestStruct(a=0, b="", c=[], d={})
+    my_func(xx)
     import os
     print(f"test secret: {os.environ['TESTOO']}")
     print(f'Hello {name}!')
@@ -23,12 +47,14 @@ def hello_world(name: str, arr: list, dct: dict, x: TestStruct) -> str:
     description='A hello world pipeline.'
 )
 def hello_world_pipeline(name: str, arr: list, dct: dict, x: dict) -> str:
+    xx = TestStruct(a=0, b="", c=[], d={})
     try:
-        x = TestStruct.model_validate(x)
+        xx = TestStruct.model_validate(x)
     except:
         print("ERROR: TestStruct.model_validate failed")
-        x = TestStruct(a=0, b="", c=[], d={})
+        # x = TestStruct(a=0, b="", c=[], d={})
     hello_world_task = hello_world(name=name, arr=arr, dct=dct, x=x)
+    my_func(xx)
     kubernetes.use_secret_as_env(hello_world_task, 
                                  secret_name='kfp-secret',
                                  secret_key_to_env={"test": "TESTOO"})

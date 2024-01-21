@@ -5,6 +5,7 @@
 #    arr: list
 #    dct: dict
 #    name: str
+#    x: dict
 # Outputs:
 #    Output: str
 components:
@@ -18,6 +19,8 @@ components:
           parameterType: STRUCT
         name:
           parameterType: STRING
+        x:
+          parameterType: STRUCT
     outputDefinitions:
       parameters:
         Output:
@@ -37,8 +40,9 @@ deploymentSpec:
         - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
           \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
           \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.4.0'\
-          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
-          $0\" \"$@\"\n"
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'pydantic==1.8.2'\
+          \ && \"$0\" \"$@\"\n"
         - sh
         - -ec
         - 'program_path=$(mktemp -d)
@@ -50,10 +54,17 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef hello_world(name: str, arr: list, dct: dict) -> str:\n    import\
-          \ os\n    print(f\"test secret: {os.environ['TESTOO']}\")\n    print(f'Hello\
-          \ {name}!')\n    print(f'len: {len(arr)} , arr: {arr}')\n    print(f'len:\
-          \ {len(dct)} , dct: {dct}')\n    return f'Hello {name}!'\n\n"
+          \ *\n\ndef hello_world(name: str, arr: list, dct: dict, x: dict) -> str:\n\
+          \    from pydantic import BaseModel\n    class TestStruct(BaseModel):\n\
+          \        a: int\n        b: str\n        c: list\n        d: dict\n\n  \
+          \  def my_func(t: TestStruct):\n        print(t)\n        return t.a\n \
+          \   xx = TestStruct(a=0, b=\"\", c=[], d={})\n    try:\n        xx = TestStruct.model_validate(x)\n\
+          \    except Exception as e:\n        print(\"ERROR: TestStruct.model_validate\
+          \ failed\")\n        print(e)\n        # x = TestStruct(a=0, b=\"\", c=[],\
+          \ d={})\n    my_func(xx)\n    import os\n    print(f\"test secret: {os.environ['TESTOO']}\"\
+          )\n    print(f'Hello {name}!')\n    print(f'len: {len(arr)} , arr: {arr}')\n\
+          \    print(f'len: {len(dct)} , dct: {dct}')\n    return f'Hello {name}!'\n\
+          \n"
         image: python:3.7
 pipelineInfo:
   description: A hello world pipeline.
@@ -80,6 +91,8 @@ root:
               componentInputParameter: dct
             name:
               componentInputParameter: name
+            x:
+              componentInputParameter: x
         taskInfo:
           name: hello-world
   inputDefinitions:
@@ -90,6 +103,8 @@ root:
         parameterType: STRUCT
       name:
         parameterType: STRING
+      x:
+        parameterType: STRUCT
   outputDefinitions:
     parameters:
       Output:

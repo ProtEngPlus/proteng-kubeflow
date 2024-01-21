@@ -3,7 +3,7 @@ name: Test Build Microservices Images with V3 code structure
 on:
     push:
         branches:
-        - '*/*'
+        - '*'
 
 jobs:
     blast-service:
