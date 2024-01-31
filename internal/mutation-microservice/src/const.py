@@ -1,3 +1,0 @@
-MUTATION_BUCKET_NAME = "mutation"
-MUTATION_SERVICE_NAME = "proteng-mutation"
-MUTATION_STAGE_ID = 3

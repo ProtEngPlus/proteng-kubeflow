@@ -1,3 +1,0 @@
-EVOTUNE_BUCKET_NAME = "unirep"
-EVOTUNE_SERVICE_NAME = "proteng-evotune"
-EVOTUNE_STAGE_ID = 1

@@ -1,3 +1,0 @@
-FITTOP_BUCKET_NAME = "ridgecv"
-FITTOP_SERVICE_NAME = "proteng-fittop"
-FITTOP_STAGE_ID = 2

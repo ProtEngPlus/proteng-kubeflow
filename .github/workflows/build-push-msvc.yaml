@@ -1,4 +1,4 @@
-name: Build and Publish Microservices
+name: Build and Publish ML pipeline microservices
 
 on:
   workflow_dispatch:
@@ -11,6 +11,7 @@ on:
                 - blast
                 - evotune
                 - fittop
+                - mutation
 
 jobs:
   build:
@@ -44,10 +45,10 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
-        context: ./internal
-        file: ./internal/${{ inputs.service }}-microservice/Dockerfile
+        context: .
+        file: ./projects/${{ inputs.service }}/Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/${{ inputs.service }}-service:${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-${{ inputs.service }}:${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
