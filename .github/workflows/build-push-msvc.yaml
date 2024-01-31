@@ -46,7 +46,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/${{ inputs.service }}/Dockerfile
+        file: ./projects/${{ inputs.service }}/docker/microservice.Dockerfile
         push: true
         tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-${{ inputs.service }}:${{ env.SHORT_SHA }}
         cache-from: type=gha

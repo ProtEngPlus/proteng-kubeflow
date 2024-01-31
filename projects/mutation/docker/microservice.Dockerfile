@@ -2,7 +2,7 @@ FROM python:3.11.7-slim
 
 WORKDIR /microservice
 
-COPY /projects/fittop .
+COPY projects/mutation .
 
 RUN mkdir pkg
 

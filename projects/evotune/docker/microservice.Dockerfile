@@ -2,7 +2,7 @@ FROM python:3.11.7-slim
 
 WORKDIR /microservice
 
-COPY /projects/evotune .
+COPY projects/evotune .
 
 RUN mkdir pkg
 
