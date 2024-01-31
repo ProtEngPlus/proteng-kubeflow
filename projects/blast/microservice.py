@@ -1,11 +1,12 @@
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 import os
 
 from dotenv import dotenv_values
 
 import sys
-
-sys.path.append("../")
+sys.path.append("../../")
 
 from dotenv import load_dotenv
 
@@ -25,6 +26,10 @@ from pkg.common.db import (
 
 
 app = FastAPI()
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(req, e):
+    return JSONResponse({"code": 500, "error": str(e)}, 500)
 
 
 @app.get("/")
@@ -59,6 +64,6 @@ async def run_blast(requestBody: RequestBlastBody):
         )
         blastThread.start()
 
-        return {"run_blast_thread": "success"}
-    except:
-        return {"run_blast_thread": "fail"}
+        return {"code": 200, "message": "started blast thread"}
+    except Exception as e:
+        raise e

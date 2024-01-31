@@ -1,5 +1,9 @@
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 import threading
+import sys
+sys.path.append("../../")
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -7,6 +11,10 @@ load_dotenv()
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
 app = FastAPI()
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(req, e):
+    return JSONResponse({"code": 500, "error": str(e)}, 500)
 
 @app.get("/")
 async def root():
@@ -20,7 +28,7 @@ def requestTopModel(requestBody: RequestFitTopBody):
         topModelThread = threading.Thread(target=doFitTop, args=(requestBody,))
         topModelThread.start()
 
-        return {"message": "Start Top Model Thread"}
-    except:
-        return {"message": "Fail to start Top Model Thread"}
+        return {"code": 200, "message": "started fittop thread"}
+    except Exception as e:
+        raise e
     
