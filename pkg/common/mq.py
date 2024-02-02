@@ -1,11 +1,11 @@
-import time
+import datetime
 
 from pkg.common.publisher import publishJobStatusEvent, JobStatusEventMessage, JobUpdateData, Artifact
 
 def publishCompletedJobStatusToMQ(serviceName, bucketName, stageID, jobId, filePath):
     message = JobStatusEventMessage(
         service_name=serviceName,
-        timestamp=time.time(),
+        timestamp=datetime.datetime.now().isoformat(),
         data=JobUpdateData(
             job_id=jobId,
             stage_id=stageID,
@@ -19,7 +19,7 @@ def publishCompletedJobStatusToMQ(serviceName, bucketName, stageID, jobId, fileP
 def publishFailedJobStatusToMQ(serviceName, bucketName, stageID, job_id, filePath, error):
     message = JobStatusEventMessage(
         service_name=serviceName,
-        timestamp=time.time(),
+        timestamp=datetime.datetime.now().isoformat(),
         data=JobUpdateData(
             job_id=job_id,
             stage_id=stageID,

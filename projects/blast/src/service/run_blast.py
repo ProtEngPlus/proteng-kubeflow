@@ -6,7 +6,7 @@ import json
 from pkg.common.db import createBucket, uploadToBucket, downloadFromBucket
 from pkg.common.publisher import *
 from datetime import datetime, timezone
-import time
+import datetime
 
 
 def runBlastThread(blastParams, jobId, randomState):
@@ -48,7 +48,7 @@ def runBlastThread(blastParams, jobId, randomState):
 
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=time.time(),
+            timestamp=datetime.datetime.now().isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,
@@ -62,7 +62,7 @@ def runBlastThread(blastParams, jobId, randomState):
         # TODO: Send Error Message to Message Queue
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=time.time(),
+            timestamp=datetime.datetime.now().isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,
