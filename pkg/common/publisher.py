@@ -2,6 +2,8 @@ import pika
 from pydantic import BaseModel
 from typing import Optional, Dict
 import os
+import logging
+import datetime
 
 # TODO: Create a persistent connection to RabbitMQ instead
 
@@ -15,6 +17,7 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
     channel.basic_publish(exchange="", routing_key=queue_name, body=message)
 
     connection.close()
+    logging.info(f"publish message: Message published to {queue_name} queue")
 
 
 class Artifact(BaseModel):
@@ -41,16 +44,17 @@ class JobStatusEventMessage(BaseModel):
 def publishJobStatusEvent(message: JobStatusEventMessage):
     rabbitmq_url = os.environ.get("RABBITMQ_URL")
     queue_name = "job_status_event"
-    print(rabbitmq_url)
+
     try :
         publishDefaultExchange(rabbitmq_url, queue_name, message.model_dump_json())
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        logging.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
 
 
 if __name__ == "__main__":
     # TEST: publishJobStatusEvent
-
+    os.environ.update([("RABBITMQ_URL","amqp://guest:guest@localhost:5672/")])
+    print(datetime.datetime.now().isoformat())
     message = JobStatusEventMessage(
         service_name="job",
         timestamp="2021-01-01T00:00:00.000Z",
