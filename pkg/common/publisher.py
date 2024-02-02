@@ -46,7 +46,7 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
     queue_name = "job_status_event"
 
     try :
-        publishDefaultExchange(rabbitmq_url, queue_name, message.model_dump_json())
+        publishDefaultExchange(rabbitmq_url, queue_name, message.json())
     except Exception as err:
         logging.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
 

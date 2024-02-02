@@ -31,6 +31,7 @@ def downloadFromBucket(bucketName, fileName):
     return blob.download_as_string()
 
 def getStorageClient():
+    pk = os.environ.get('PRIVATE_KEY').replace('\\n', '\n') # replace the escaped newline character
     creds = {
         "type": "service_account",
         "project_id": os.environ.get('PROJECT_ID'),
@@ -43,3 +44,10 @@ def getStorageClient():
     credentials = service_account.Credentials.from_service_account_info(creds)
     storage_client = storage.Client(credentials=credentials)
     return storage_client
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    #print(os.environ.get('PRIVATE_KEY'))
+    # TEST: createBucket
+    client = getStorageClient()
