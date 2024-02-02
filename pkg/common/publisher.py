@@ -7,17 +7,13 @@ import os
 
 
 def publishDefaultExchange(rabbitmq_url, queue_name, message):
-    # Create connection and channel
     connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
     channel = connection.channel()
 
-    # Declare queue
     channel.queue_declare(queue=queue_name, durable=True)
 
-    # Publish message
     channel.basic_publish(exchange="", routing_key=queue_name, body=message)
 
-    # Close connection
     connection.close()
 
 
