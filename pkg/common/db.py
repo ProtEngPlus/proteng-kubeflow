@@ -36,7 +36,7 @@ def getStorageClient():
         "type": "service_account",
         "project_id": os.environ.get('PROJECT_ID'),
         "private_key_id": os.environ.get('PRIVATE_KEY_ID'),
-        "private_key": os.environ.get('PRIVATE_KEY'),
+        "private_key": pk,
         "client_email": os.environ.get('CLIENT_EMAIL'),
         "client_id": os.environ.get('CLIENT_ID'),
         "token_uri": os.environ.get('TOKEN_URI'),
