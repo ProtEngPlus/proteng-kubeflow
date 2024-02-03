@@ -126,7 +126,7 @@ jobs:
           if [[ ${{ github.event.inputs.evotune }} == true ]]; then export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune; fi
           if [[ ${{ github.event.inputs.fittop }} == true ]]; then export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop; fi
           if [[ ${{ github.event.inputs.mutation }} == true ]]; then export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation; fi
-          export IMAGE_LIST=$(python3 -c 'import os; print(",".join([e for e in [os.environ["BLAST_IMAGE"], os.environ["EVOTUNE_IMAGE"], os.environ["FITTOP_IMAGE"], os.environ["MUTATION_IMAGE"]] if e != ""]]]')
+          export IMAGE_LIST=$(python3 -c 'import os; print(",".join([e for e in [os.environ["BLAST_IMAGE"], os.environ["EVOTUNE_IMAGE"], os.environ["FITTOP_IMAGE"], os.environ["MUTATION_IMAGE"]] if e != ""]))')
           echo $IMAGE_LIST
           echo "IMAGE_LIST=${IMAGE_LIST}" >> ${GITHUB_ENV}
 
