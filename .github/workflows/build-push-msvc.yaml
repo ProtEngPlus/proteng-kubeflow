@@ -133,5 +133,5 @@ jobs:
           repo: devops-k8s
           github_token: ${{ secrets.ACTIONS_AUTH_TOKEN }}
           github_user: protenger
-          workflow_file_name: update-tag.yaml
+          workflow_file_name: update_tag_multiple.yaml
           client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.SHORT_SHA, env.IMAGE_LIST) }}
