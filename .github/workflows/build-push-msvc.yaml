@@ -3,28 +3,28 @@ name: Build and Publish ML pipeline microservices
 on:
   workflow_dispatch:
     inputs:
-        auto-deploy:
+        auto_deploy:
             description: 'auto deploy to devops-k8s'
             required: true
             type: boolean
             default: false
         blast:
-            description: 'Select to build and publish blast service'
+            description: 'blast'
             required: true
             type: boolean
             default: false
         evotune:
-            description: 'Select to build and publish evotune service'
+            description: 'evotune'
             required: true
             type: boolean
             default: false
         fittop:
-            description: 'Select to build and publish fittop service'
+            description: 'fittop'
             required: true
             type: boolean
             default: false
         mutation:
-            description: 'Select to build and publish mutation service'
+            description: 'mutation'
             required: true
             type: boolean
             default: false
