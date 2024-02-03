@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 import os
+import logging
 
 from dotenv import dotenv_values
 
@@ -24,6 +25,7 @@ from pkg.common.db import (
     downloadFromBucket,
 )
 
+logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
 

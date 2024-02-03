@@ -3,19 +3,34 @@ name: Build and Publish ML pipeline microservices
 on:
   workflow_dispatch:
     inputs:
-        service:
-            description: 'Service to build and publish'
+        auto-deploy:
+            description: 'auto deploy to devops-k8s'
             required: true
-            type: choice
-            options:
-                - blast
-                - evotune
-                - fittop
-                - mutation
-
+            type: boolean
+            default: false
+        blast:
+            description: 'Select to build and publish blast service'
+            required: true
+            type: boolean
+            default: false
+        evotune:
+            description: 'Select to build and publish evotune service'
+            required: true
+            type: boolean
+            default: false
+        fittop:
+            description: 'Select to build and publish fittop service'
+            required: true
+            type: boolean
+            default: false
+        mutation:
+            description: 'Select to build and publish mutation service'
+            required: true
+            type: boolean
+            default: false
 jobs:
-  build:
-    name: Build and Push Docker Image
+  build-push:
+    name: Build and Push Docker Images
     runs-on: ubuntu-latest
     permissions:
         contents: read
@@ -42,13 +57,81 @@ jobs:
         export SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
         echo "SHORT_SHA=${SHORT_SHA}" >> ${GITHUB_ENV}
         
-    - name: Build and push
+    - name: Build and push blast service
+      if: ${{ inputs.blast == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/${{ inputs.service }}/docker/microservice.Dockerfile
+        file: ./projects/blast/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-${{ inputs.service }}:${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-blast:${{ env.SHORT_SHA }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build and push evotune service
+      if: ${{ inputs.evotune == true }}
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./projects/evotune/docker/microservice.Dockerfile
+        push: true
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-evotune:${{ env.SHORT_SHA }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build and push fittop service
+      if: ${{ inputs.fittop == true }}
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./projects/fittop/docker/microservice.Dockerfile
+        push: true
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-fittop:${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Build and push mutation service
+      if: ${{ inputs.mutation == true }}
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./projects/mutation/docker/microservice.Dockerfile
+        push: true
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mutation:${{ env.SHORT_SHA }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+  
+  deploy:
+    name: Auto Deploy
+    runs-on: ubuntu-latest
+    needs: build-push
+    if: ${{ github.event.inputs.auto_deploy }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Get short commit SHA
+        run: |
+          export SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo $SHORT_SHA
+          echo "SHORT_SHA=${SHORT_SHA}" >> ${GITHUB_ENV}
+
+      - name: Get image list
+        run: |
+          export BLAST_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-blast
+          export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune
+          export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop
+          export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation
+          export IMAGE_LIST=$(python3 -c 'import os; print(",".join([e for e in [os.environ["BLAST_IMAGE"], os.environ["EVOTUNE_IMAGE"], os.environ["FITTOP_IMAGE"], os.environ["MUTATION_IMAGE"]] if e != ""]))')
+          echo $IMAGE_LIST
+          echo "IMAGE_LIST=${IMAGE_LIST}" >> ${GITHUB_ENV}
+
+      - name: Auto Deploy to devops-k8s
+        uses:  convictional/trigger-workflow-and-wait@v1.6.5
+        with:
+          owner: ProtEngPlus
+          repo: devops-k8s
+          github_token: ${{ secrets.ACTIONS_AUTH_TOKEN }}
+          github_user: protenger
+          workflow_file_name: update-tag.yaml
+          client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.SHORT_SHA, env.IMAGE_LIST) }}
