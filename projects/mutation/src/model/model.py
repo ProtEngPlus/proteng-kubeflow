@@ -16,6 +16,7 @@ class MutationParams(BaseModel):
 class RequestMutationBody(BaseModel):
     job_id: str
     input: str
+    mutation_id: str
     config: MutationParams
     artifact: ArtifactMap
     meta: list[str]

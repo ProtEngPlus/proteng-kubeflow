@@ -32,6 +32,7 @@ class JobUpdateData(BaseModel):
     status: str
     artifact: Artifact
     error: Optional[str] = ""
+    mutation_id: Optional[str] = ""
     mutation_result: Optional[Dict[str, float]] = {}
 
 
