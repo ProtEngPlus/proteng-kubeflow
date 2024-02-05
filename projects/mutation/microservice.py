@@ -1,7 +1,5 @@
 import threading
 import sys
-import os
-import logging
 sys.path.append("../../")
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,7 +11,9 @@ from fastapi.responses import JSONResponse
 from src.service.thread import runMutationThread
 from src.model.model import RequestMutationBody
 
-logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG") == "true" else logging.INFO)
+from pkg.common.logger import getLogger
+
+logger = getLogger("mutation_service")
 
 app = FastAPI()
 
@@ -23,9 +23,9 @@ def http_exception_handler(req, e):
 
 @app.post("/mutation")
 def requestEvotune(requestBody: RequestMutationBody):
-    logging.debug("----------------------------------------------------------")
-    logging.debug("requesting mutation service...")
-    logging.debug(requestBody)
+    logger.debug("----------------------------------------------------------")
+    logger.debug("requesting mutation service...")
+    logger.debug(requestBody)
     try:
         # Create and start the MUTATION thread
         mutationThread = threading.Thread(target=runMutationThread, args=(requestBody,))

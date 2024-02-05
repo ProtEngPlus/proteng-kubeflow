@@ -7,6 +7,7 @@ import datetime
 
 # TODO: Create a persistent connection to RabbitMQ instead
 
+logger = logging.getLogger("rabbitmq_publisher")
 
 def publishDefaultExchange(rabbitmq_url, queue_name, message):
     connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
@@ -47,7 +48,7 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
     try :
         publishDefaultExchange(rabbitmq_url, queue_name, message.json())
     except Exception as err:
-        logging.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
+        logger.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
 
 
 if __name__ == "__main__":

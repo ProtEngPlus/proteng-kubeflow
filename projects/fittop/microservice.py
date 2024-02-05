@@ -3,8 +3,6 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 import threading
 import sys
-import logging
-import os
 sys.path.append("../../")
 
 from dotenv import load_dotenv
@@ -13,7 +11,9 @@ load_dotenv()
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
 
-logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG") == "true" else logging.INFO)
+from pkg.common.logger import getLogger
+
+logger = getLogger("fittop_service")
 
 app = FastAPI()
 

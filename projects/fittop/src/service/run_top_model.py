@@ -1,6 +1,5 @@
 import pickle as pkl
 import warnings
-import logging
 
 warnings.filterwarnings('ignore')
 
@@ -8,34 +7,37 @@ warnings.filterwarnings('ignore')
 
 from pkg.common.db import uploadToBucket
 from pkg.common.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
+from pkg.common.logger import getLogger
 from src.const import FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID
 from src.service.top_model_utils import formatData,loadSeqs,doRidgeRegression
 from src.model.model import RequestFitTopBody
 
+logger = getLogger("fittop_service")
+
 def doFitTop(requestBody: RequestFitTopBody):
     try:
         data = formatData(requestBody.lab_result.total, requestBody.lab_result.sequences, requestBody.lab_result.scores)
-        logging.info(f"job id {requestBody.job_id}: load data ok")
+        logger.info(f"job id {requestBody.job_id}: load data ok")
         seqs = loadSeqs(
             seqs_df=data,
             bucket_name=requestBody.artifact.unirep.bucket_name,
             model_path=requestBody.artifact.unirep.path
         )
-        logging.info(f"job id {requestBody.job_id}: load seqs ok")
+        logger.info(f"job id {requestBody.job_id}: load seqs ok")
         top_model = doRidgeRegression(
             this_df=seqs,
             train_batch_sizes=requestBody.config.train_batch_sizes,
             n_batch=requestBody.config.n_batch,
             alpha=requestBody.config.alpha
         )
-        logging.info(f"job id {requestBody.job_id}: ridge regress ok")
+        logger.info(f"job id {requestBody.job_id}: ridge regress ok")
         model_data = pkl.dumps(top_model)
         bucket_name = "ridgecv"
         model_filename = requestBody.job_id + '.pkl'
         upload_result = uploadToBucket(bucket_name, model_filename, model_data)
-        logging.info(f"job id {requestBody.job_id}: upload result: {upload_result}")
+        logger.info(f"job id {requestBody.job_id}: upload result: {upload_result}")
         publishCompletedJobStatusToMQ(FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID, requestBody.job_id, requestBody.job_id+".pkl")
-        logging.info(f"job id {requestBody.job_id} completed successfully")
+        logger.info(f"job id {requestBody.job_id} completed successfully")
     except Exception as err:
-        logging.error(f"job id {requestBody.job_id}: error do fittop: Unexpected {err=}, {type(err)=}")
+        logger.error(f"job id {requestBody.job_id}: error do fittop: Unexpected {err=}, {type(err)=}")
         publishFailedJobStatusToMQ(FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID, requestBody.job_id, requestBody.job_id+".pkl", str(err))
