@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-import os
-import logging
 
 from dotenv import dotenv_values
 
@@ -18,8 +16,6 @@ import subprocess  # Import subprocess module
 
 from src.model.model import RequestBlastBody, BlastParams
 from src.service.run_blast import runBlastThread
-
-logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG") == "true" else logging.INFO)
 
 app = FastAPI()
 

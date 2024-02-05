@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
-import logging
 import random
 from jax_unirep import get_reps
+from pkg.common.logger import getLogger
 from src.service.utils import getIntToAa
+
+logger = getLogger("mutation_service")
 
 def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")
     for i in range(m): #iterate through number of mutations to add
@@ -48,7 +50,7 @@ def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type
         rand_var = random.random()
 
         if rand_var < p: # metropolis-Hastings update selection criterion
-            logging.debug(str(new_mut_loc+1)+" "+s[new_mut_loc]+"->"+s_new[new_mut_loc])
+            logger.debug(str(new_mut_loc+1)+" "+s[new_mut_loc]+"->"+s_new[new_mut_loc])
             s, y = s_new, y_new # if criteria is met, update sequence and corresponding fitness
 
         s_traj.append(s) # update the sequence trajectory records for this iteration of mutagenesis
@@ -66,7 +68,7 @@ def runDirectedEvoTrajectories(s_wt, Model, T, num_iterations, num_trajectories,
         s_records.append(s_traj) # update the sequence trajectory records for this full mutagenesis trajectory
         y_records.append(y_traj) # update the fitness trajectory records for this full mutagenesis trajectory
         
-        logging.debug("finished trajectory #",i)
+        logger.debug("finished trajectory #",i)
 
     s_records = np.array(s_records)
     y_records = np.array(y_records)
