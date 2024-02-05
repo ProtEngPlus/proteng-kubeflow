@@ -1,5 +1,6 @@
 import pickle as pkl
 import warnings
+import logging
 
 warnings.filterwarnings('ignore')
 
@@ -14,28 +15,27 @@ from src.model.model import RequestFitTopBody
 def doFitTop(requestBody: RequestFitTopBody):
     try:
         data = formatData(requestBody.lab_result.total, requestBody.lab_result.sequences, requestBody.lab_result.scores)
-        print('load data ok')
+        logging.info(f"job id {requestBody.job_id}: load data ok")
         seqs = loadSeqs(
             seqs_df=data,
             bucket_name=requestBody.artifact.unirep.bucket_name,
             model_path=requestBody.artifact.unirep.path
         )
-        print('load seqs ok')
+        logging.info(f"job id {requestBody.job_id}: load seqs ok")
         top_model = doRidgeRegression(
             this_df=seqs,
             train_batch_sizes=requestBody.config.train_batch_sizes,
             n_batch=requestBody.config.n_batch,
             alpha=requestBody.config.alpha
         )
-        print('ridge regress ok')
+        logging.info(f"job id {requestBody.job_id}: ridge regress ok")
         model_data = pkl.dumps(top_model)
         bucket_name = "ridgecv"
         model_filename = requestBody.job_id + '.pkl'
         upload_result = uploadToBucket(bucket_name, model_filename, model_data)
-        print(upload_result)
+        logging.info(f"job id {requestBody.job_id}: upload result: {upload_result}")
         publishCompletedJobStatusToMQ(FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID, requestBody.job_id, requestBody.job_id+".pkl")
-        print("message ok pushed")
+        logging.info(f"job id {requestBody.job_id} completed successfully")
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        logging.error(f"job id {requestBody.job_id}: error do fittop: Unexpected {err=}, {type(err)=}")
         publishFailedJobStatusToMQ(FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID, requestBody.job_id, requestBody.job_id+".pkl", str(err))
-        print("message fail pushed")

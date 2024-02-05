@@ -12,7 +12,7 @@ import logging
 
 def runBlastThread(blastParams, jobId, randomState):
     try:
-        logging.info(f"Running BLAST for {jobId}")
+        logging.info(f"job id {jobId}: Running BLAST")
         # Run BLAST
         blastArgs = {k: v for k, v in blastParams.dict().items() if v is not None}
         resultHandle = NCBIWWW.qblast(**blastArgs)
@@ -39,10 +39,10 @@ def runBlastThread(blastParams, jobId, randomState):
         # Convert the results to a JSON string
         resultsJson = json.dumps(results)
 
-        logging.info("Uploading results to object storage")
+        logging.info(f"job id {jobId}: Uploading results to object storage")
         # Upload the JSON string directly to the object storage bucket
         upload_status = uploadToBucket("similar_protein", jobId, resultsJson)
-        logging.info(f"Upload status: {upload_status}")
+        logging.info(f"job id {jobId}: Upload status: {upload_status}")
 
         message = JobStatusEventMessage(
             service_name="blast-microservice",
@@ -57,7 +57,7 @@ def runBlastThread(blastParams, jobId, randomState):
         publishJobStatusEvent(message)
         logging.info(f"Job {jobId} completed successfully")
     except Exception as err:
-        logging.critical(f"error run blast: Unexpected {err=}, {type(err)=}")
+        logging.error(f"job id {jobId}: error run blast: Unexpected {err=}, {type(err)=}")
         message = JobStatusEventMessage(
             service_name="blast-microservice",
             timestamp=datetime.datetime.now().isoformat(),

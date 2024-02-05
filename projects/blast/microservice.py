@@ -19,13 +19,7 @@ import subprocess  # Import subprocess module
 from src.model.model import RequestBlastBody, BlastParams
 from src.service.run_blast import runBlastThread
 
-from pkg.common.db import (
-    createBucket,
-    uploadToBucket,
-    downloadFromBucket,
-)
-
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG") == "true" else logging.INFO)
 
 app = FastAPI()
 
@@ -37,18 +31,6 @@ def http_exception_handler(req, e):
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-@app.get("/createBucket")
-def createBucketAPI(bucketName):
-    createBucket(bucketName)
-    return "success"
-
-
-@app.get("/downloadFromBucket")
-def downloadFromBucketAPI(bucketName, fileName):
-    s = downloadFromBucket(bucketName, fileName)
-    print(s)
 
 
 @app.post("/blast")

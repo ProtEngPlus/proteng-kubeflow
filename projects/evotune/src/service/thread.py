@@ -1,4 +1,5 @@
 import pickle as pkl
+import logging
 
 from src.model.model import RequestEvotuneBody
 
@@ -8,40 +9,40 @@ from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatus
 
 def runEvotuneThread(requestBody: RequestEvotuneBody):
     try:
-        print("Start Evotune Thread")
+        logging.info(f"job id {requestBody.job_id}: Start Evotune Thread")
 
         # get train set and validation set from DB
         #   sequence = { 
         #       "train_set": ["sequence1", "sequence2", ...],
         #       "out_domain_val_set": ["sequence1", "sequence2", ...]
         #   }
-        print("Getting sequences from DB...")
+        logging.debug("Getting sequences from DB...")
         sequences = getSequencesFromDB(requestBody)
-        print("Sequences got!")
+        logging.debug("Sequences got!")
 
         # Evotune
-        print("Start Evotuning...")
+        logging.info(f"job id {requestBody.job_id}: start evotuning")
         _, evotuned_params = trainUnirep(sequences["train_set"], sequences["out_domain_val_set"], requestBody.config)
-        print("Training done!")
+        logging.info(f"job id {requestBody.job_id}: training done.")
 
         # Convert evotuned_params to pkl file
         model_weights = pkl.dumps(evotuned_params)
 
         # Save model_weights (pkl file) to Unirep Object Storage
-        print("Saving evotuned_params...")
+        logging.debug("Saving evotuned_params...")
         uploadEUnirepToDB(requestBody.job_id+".pkl", model_weights)
-        print("evotuned_params saved!")
+        logging.info(f"job id {requestBody.job_id}: evotuned_params saved")
 
         # Send Success Message to Message Queue
-        print("Sending success message to MQ...")
+        logging.debug("Sending success message to MQ...")
         publishCompletedJobStatusToMQ(requestBody.job_id, requestBody.job_id+".pkl")
-        print("Success message sent!")
+        logging.debug("Success message sent!")
 
-        print("Evotune Thread finished")
+        logging.info(f"job id {requestBody.job_id}: Evotune Thread finished")
     except Exception as err:
-        # Send Error Message to Message Queue
-        print("Sending error message to MQ...")
-        publishFailedJobStatusToMQ(requestBody.job_id, requestBody.job_id+".pkl", str(err))
-        print("Error message sent!")
+        logging.error(f"job id {requestBody.job_id}: error evotune: Unexpected {err=}, {type(err)=}")
 
-        print(f"Unexpected {err=}, {type(err)=}")
+        # Send Error Message to Message Queue
+        logging.debug("Sending error message to MQ...")
+        publishFailedJobStatusToMQ(requestBody.job_id, requestBody.job_id+".pkl", str(err))
+        logging.debug("Error message sent!")
