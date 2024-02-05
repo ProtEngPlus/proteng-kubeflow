@@ -7,9 +7,7 @@ from pkg.common.db import createBucket, uploadToBucket, downloadFromBucket
 from pkg.common.publisher import *
 from datetime import datetime, timezone
 import datetime
-from pkg.common.logger import getLogger
-
-logger = getLogger("blast_service")
+from pkg.common.logger import blastLogger as logger
 
 def runBlastThread(blastParams, jobId, randomState):
     try:

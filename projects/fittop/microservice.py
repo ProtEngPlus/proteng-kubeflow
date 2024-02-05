@@ -11,9 +11,7 @@ load_dotenv()
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
 
-from pkg.common.logger import getLogger
-
-logger = getLogger("fittop_service")
+from pkg.common.logger import fittopLogger as logger
 
 app = FastAPI()
 

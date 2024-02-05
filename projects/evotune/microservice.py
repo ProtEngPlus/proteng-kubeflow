@@ -4,16 +4,19 @@ sys.path.append("../../")
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
+# silence TQDM
+if not os.getenv("DEBUG") == "true":
+    os.environ["TQDM_DISABLE"] = "1"
+
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
 from pkg.common.db import createBucket, downloadFromBucket, uploadToBucket
-from pkg.common.logger import getLogger
+from pkg.common.logger import evotuneLogger as logger
 from src.model.model import RequestEvotuneBody, RequestBucketBody
 from src.service.thread import runEvotuneThread
-
-logger = getLogger("evotune_service")
 
 app = FastAPI()
 
