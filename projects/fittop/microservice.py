@@ -3,6 +3,8 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 import threading
 import sys
+import logging
+import os
 sys.path.append("../../")
 
 from dotenv import load_dotenv
@@ -10,6 +12,9 @@ load_dotenv()
 
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
+
+logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG") == "true" else logging.INFO)
+
 app = FastAPI()
 
 @app.exception_handler(HTTPException)
@@ -22,7 +27,6 @@ async def root():
 
 @app.post("/top-model")
 def requestTopModel(requestBody: RequestFitTopBody):
-    print('request do top model')
     try:
         # Create and start the BLAST thread
         topModelThread = threading.Thread(target=doFitTop, args=(requestBody,))

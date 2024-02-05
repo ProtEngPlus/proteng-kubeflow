@@ -17,8 +17,6 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
     channel.basic_publish(exchange="", routing_key=queue_name, body=message)
 
     connection.close()
-    logging.info(f"publish message: Message published to {queue_name} queue")
-
 
 class Artifact(BaseModel):
     bucket_name: str
