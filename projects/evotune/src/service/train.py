@@ -1,19 +1,23 @@
 import os
+import logging
+
 # silence TQDM
 if not os.getenv("DEBUG") == "true":
     os.environ["TQDM_DISABLE"] = "1"
 
+# silience the evotune logger
+import jax_unirep.evotuning as evotunelib
+def _silent_evotuning_log():
+    if evotunelib.logger.hasHandlers():
+        evotunelib.logger.handlers.clear()
+    evotunelib.logger.setLevel(logging.ERROR)
+    evotunelib.logger.propagate = False
+
+evotunelib.setup_evotuning_log = _silent_evotuning_log
+
 from jax.random import PRNGKey
 from jax_unirep import evotune
 from jax_unirep.evotuning_models import mlstm64
-import logging
-
-# silience the evotune logger
-evotuneLogger = logging.getLogger("evotuning")
-if evotuneLogger.hasHandlers():
-    evotuneLogger.handlers.clear()
-evotuneLogger.setLevel(logging.CRITICAL)
-
 
 def trainUnirep(trainSet, outDomainValSet, config):
     init_fun, apply_fun = mlstm64()
