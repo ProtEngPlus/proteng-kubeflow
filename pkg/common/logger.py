@@ -7,7 +7,7 @@ def getLogger(name=__name__):
         logger.handlers.clear()
     logger.setLevel(logging.DEBUG if os.environ.get('DEBUG') == 'true' else logging.INFO)
     consoleHandler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
     consoleHandler.setFormatter(formatter)
     logger.addHandler(consoleHandler)
     return logger
