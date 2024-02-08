@@ -1,5 +1,6 @@
 import os
 import logging
+import pkg.common.logger as protenglog
 
 # silence TQDM
 if not os.getenv("DEBUG") == "true":
@@ -14,6 +15,15 @@ def _silent_evotuning_log():
     evotunelib.logger.propagate = False
 
 evotunelib.setup_evotuning_log = _silent_evotuning_log
+
+# silence optuna logger
+import optuna.logging as optunalog
+def _silent_optuna_get_logger(__name__):
+    optunalogger = protenglog.getLogger(__name__)
+    optunalogger.setLevel(logging.ERROR)
+    optunalogger.propagate = False
+
+optunalog.get_logger = _silent_optuna_get_logger
 
 from jax.random import PRNGKey
 from jax_unirep import evotune
