@@ -43,7 +43,7 @@ def trainUnirep(trainSet, outDomainValSet, config):
         out_dom_seqs=outDomainValSet,
         n_trials=config.n_trials,
         n_splits=config.n_splits,
-        n_epochs_config=config.n_epochs_config,
-        learning_rate_config=config.learning_rate_config,
+        n_epochs_config={"low": config.n_epochs_config_low, "high": config.n_epochs_config_high},
+        learning_rate_config= {"low": config.learning_rate_config_low, "high": config.learning_rate_config_high}
     )
     return study, evotuned_params
