@@ -25,6 +25,7 @@ def runMutationThread(requestBody: RequestMutationBody):
 
         # Send Success Message to Message Queue
         logger.debug("Sending success message to MQ...")
+        logger.info(f"s records {s_records.shape} fitness_records {fitness_records.shape}")
         publishCompletedJobStatusToMQ(requestBody.job_id, requestBody.mutation_id, convertTwoArraysToDict(s_records[:, -1], fitness_records[:, -1]))
         logger.debug("Success message sent!")
 
