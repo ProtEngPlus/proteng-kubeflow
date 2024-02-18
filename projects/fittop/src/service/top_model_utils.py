@@ -32,6 +32,13 @@ def loadSeqs(seqs_df,bucket_name,model_path):
     this_df.insert(0, "sequence", seqs_df.sequence[0])
     this_df.insert(1, "fitness", seqs_df.fitness[0])
     for i in range(N_BATCHES):
+        #-----Proteng specific block start
+        start_seq = 1 + i * BATCH_LEN
+        end_seq = min(1 + (i + 1) * BATCH_LEN, N_seqs)
+        batch_seqs = seqs_df.sequence[start_seq:end_seq]
+        if len(batch_seqs) == 0:
+            continue
+        #-----Proteng specific block end
         this_unirep, _, _ = get_reps(
             seqs_df.sequence[(1 + i * BATCH_LEN):min(1 + (i + 1) * BATCH_LEN, N_seqs)],
             params=param,mlstm_size=64)
