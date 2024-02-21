@@ -8,6 +8,9 @@ from src.service.db import getSequencesFromDB, uploadEUnirepToDB
 from src.service.train import trainUnirep
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 
+import warnings
+warnings.filterwarnings('ignore')
+
 def runEvotuneThread(requestBody: RequestEvotuneBody):
     try:
         logger.info(f"job id {requestBody.job_id}: Start Evotune Thread")
