@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from src.service.thread import runMutationThread
 from src.model.model import RequestMutationBody
 
-from pkg.common.logger import mutationLogger as logger
+from src.logger import mutationLogger as logger
 from pkg.common.logger import getLogger
 from pkg.common.fast_api import GetLoggingRouteClass
 
