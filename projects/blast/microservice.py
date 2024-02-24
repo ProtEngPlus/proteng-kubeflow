@@ -1,8 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-
-from dotenv import dotenv_values
 
 import sys
 sys.path.append("../../")
@@ -16,8 +14,11 @@ import subprocess  # Import subprocess module
 
 from src.model.model import RequestBlastBody, BlastParams
 from src.service.run_blast import runBlastThread
+from pkg.common.fast_api import GetLoggingRouteClass
+from pkg.common.logger import getLogger
 
 app = FastAPI()
+router = APIRouter(route_class=GetLoggingRouteClass(getLogger('FastAPI')))
 
 @app.exception_handler(HTTPException)
 def http_exception_handler(req, e):
@@ -29,7 +30,7 @@ async def root():
     return {"message": "Hello World"}
 
 
-@app.post("/blast")
+@router.post("/blast")
 async def run_blast(requestBody: RequestBlastBody):
     # Extract parameters from the request body
     blastParams: BlastParams = requestBody.config
@@ -47,3 +48,5 @@ async def run_blast(requestBody: RequestBlastBody):
         return {"code": 200, "message": "started blast thread"}
     except Exception as e:
         raise e
+    
+app.include_router(router)

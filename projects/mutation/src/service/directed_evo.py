@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import random
 from jax_unirep import get_reps
-from pkg.common.logger import mutationLogger as logger
+from src.logger import mutationLogger as logger
 from src.service.utils import getIntToAa
 
 def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")

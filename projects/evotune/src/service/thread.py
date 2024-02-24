@@ -2,7 +2,7 @@ import pickle as pkl
 
 from src.model.model import RequestEvotuneBody
 
-from pkg.common.logger import evotuneLogger as logger
+from src.logger import evotuneLogger as logger
 
 from src.service.db import getSequencesFromDB, uploadEUnirepToDB
 from src.service.train import trainUnirep

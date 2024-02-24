@@ -3,7 +3,7 @@ from src.service.db import getParamsFromDB, getModelFromDB
 from src.service.directed_evo import runDirectedEvoTrajectories
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 from src.service.utils import convertTwoArraysToDict
-from pkg.common.logger import mutationLogger as logger
+from src.logger import mutationLogger as logger
 
 def runMutationThread(requestBody: RequestMutationBody):
     try:

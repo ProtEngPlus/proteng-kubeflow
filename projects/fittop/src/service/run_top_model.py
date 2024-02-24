@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore')
 
 from pkg.common.db import uploadToBucket
 from pkg.common.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
-from pkg.common.logger import fittopLogger as logger
+from src.logger import fittopLogger as logger
 from src.const import FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID
 from src.service.top_model_utils import formatData,loadSeqs,doRidgeRegression
 from src.model.model import RequestFitTopBody
