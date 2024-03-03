@@ -8,24 +8,38 @@ from pkg.common.publisher import *
 from datetime import datetime, timezone
 import datetime
 from src.logger import blastLogger as logger
+from src.model.model import BlastParams
 
-def runBlastThread(blastParams, jobId, randomState):
+def runBlastThread(blastParams : BlastParams, jobId, randomState):
     try:
         logger.info(f"job id {jobId}: Running BLAST")
+
+        hsp_cov = blastParams.hsp_cov
+        del blastParams.hsp_cov
+
         # Run BLAST
         blastArgs = {k: v for k, v in blastParams.dict().items() if v is not None}
         resultHandle = NCBIWWW.qblast(**blastArgs)
         result = resultHandle.read()
 
-        sequences = re.findall(r"<Hsp_hseq>(.*?)</Hsp_hseq>", result)
-        scores = re.findall(r"<Hsp_score>(.*?)</Hsp_score>", result)
+        #data preparation
+        sequences = re.findall(r'<Hsp_hseq>(.*?)</Hsp_hseq>', result)
+        scores = re.findall(r'<Hsp_score>(.*?)</Hsp_score>', result)
+        hsp_query_from = re.findall(r'<Hsp_query-from>(.*?)</Hsp_query-from>', result)
+        hsp_query_to = re.findall(r'<Hsp_query-to>(.*?)</Hsp_query-to>', result)
 
-        data = {"sequences": sequences, "score": scores}
+        data = {'sequences': sequences, 'score': scores, 'hsp_query_from': hsp_query_from, 'hsp_query_to': hsp_query_to}
         df = pd.DataFrame(data)
+        df['score'] = df['score'].astype(int)
+        df['hsp_query_from'] = df['hsp_query_from'].astype(int)
+        df['hsp_query_to'] = df['hsp_query_to'].astype(int)
+        df['length'] = df['sequences'].apply(len)
+        df['query_cover'] = ((df['hsp_query_to'] - df['hsp_query_from'] + 1) / df['length']) * 100
+        filtered_df = df[df['query_cover'] > hsp_cov]
 
         # Split the dataframe
-        outDomainValSet = df.sample(frac=0.1, weights="score", random_state=randomState)
-        trainSet = df.drop(outDomainValSet.index)
+        outDomainValSet = filtered_df.sample(frac=0.1, weights="score", random_state=randomState)
+        trainSet = filtered_df.drop(outDomainValSet.index)
 
         outDomainValSet = outDomainValSet["sequences"].tolist()
         trainSet = trainSet["sequences"].tolist()
