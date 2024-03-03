@@ -55,7 +55,7 @@ class BlastParams(BaseModel):
     template_length: Optional[int] = None
     username: Optional[str] = "blast"
     password: Optional[str] = None
-    hsp_cov : Optional[int] = None
+    hsp_cov : Optional[int] = 0
     random_state: Optional[int] = 2023
 
 
