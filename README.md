@@ -27,7 +27,7 @@ This is a mono-repo project. Each projects in the `projects` folder are isolated
         ├── docker                      # each projects can have multiple <b>Dockerfile</b>s for different type of apps to build
         |   └── microservice.Dockerfile  
         ├── microservice.py             # the <b>entrypoint</b> files to run
-        ├── kubeflow_component.py       # projects can have multiple entrypoints, with each one defines 1 app.
+        ├── consumer.py       # projects can have multiple entrypoints, with each one defines 1 app.
         ├── requirements.txt            # <b>dependencies</b> for 'example' microservice (future should use poetry)
         └── src                         # src for 'example' microservice
             ├── service                 # main source code folder for that project ( contain all logics in service )
@@ -39,6 +39,12 @@ This is a mono-repo project. Each projects in the `projects` folder are isolated
 ## Running in local
 
 create `.env` file and copy the values from notion
+
+run rabbitmq docker
+
+```sh
+docker run --name rabbitmq-for-test -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
 
 ```sh
 cd projects/<project-name>

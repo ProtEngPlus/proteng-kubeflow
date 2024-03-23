@@ -110,11 +110,11 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Get short commit SHA
+      - name: Get image tag
         run: |
           export SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           echo $SHORT_SHA
-          echo "SHORT_SHA=${SHORT_SHA}" >> ${GITHUB_ENV}
+          echo "IMAGE_TAG=fastapi-${SHORT_SHA}" >> ${GITHUB_ENV}
 
       - name: Get image list
         run: |
@@ -138,4 +138,4 @@ jobs:
           github_token: ${{ secrets.ACTIONS_AUTH_TOKEN }}
           github_user: protenger
           workflow_file_name: update_tag_multiple.yaml
-          client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.SHORT_SHA, env.IMAGE_LIST) }}
+          client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.IMAGE_TAG, env.IMAGE_LIST) }}

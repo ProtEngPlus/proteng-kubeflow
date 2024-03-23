@@ -11,26 +11,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.model.model import RequestBlastBody
-from src.service.run_blast import runBlastThread
+from src.service.thread import runMutationThread
+from src.model.model import RequestMutationBody
 from pkg.common.logger import getLogger
 
 async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
     try:
-        reqBody = RequestBlastBody(**json.loads(body))
-        logger.info(f"Received message: {reqBody.model_dump()}")
+        requestBody = RequestMutationBody(**json.loads(body))
+        logger.info(f"[x] Received message: {requestBody.model_dump()}")
 
-        blastParam = reqBody.config
-        blastParam.sequence = reqBody.input
-        jobId = reqBody.job_id
-        randomState = reqBody.config.random_state
-        del blastParam.random_state
-
-        blastThread = threading.Thread(
-            target=runBlastThread, args=(blastParam, jobId, randomState)
-        )
-        blastThread.start()
+        mutationThread = threading.Thread(target=runMutationThread, args=(requestBody,))
+        mutationThread.start()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
@@ -40,7 +32,7 @@ async def handle_message(body, logger):
 async def main(loop):
     logger = getLogger("Consumer")
     conn_url = os.getenv("RABBITMQ_URL")
-    queue_name = "run_job.blast"
+    queue_name = "run_job.mutation"
 
     try:
         logger.info("Connecting to RabbitMQ")
