@@ -1,4 +1,4 @@
-name: Build and Publish ML pipeline microservices
+name: build-push microservice (REST)
 
 on:
   workflow_dispatch:

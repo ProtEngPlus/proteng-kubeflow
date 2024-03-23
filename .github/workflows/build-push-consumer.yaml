@@ -1,4 +1,4 @@
-name: Build and Publish ML pipeline worker as consumer
+name: build-push consumer
 
 on:
   workflow_dispatch:
