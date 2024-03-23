@@ -1,4 +1,4 @@
-name: Build and Publish ML pipeline microservices
+name: Build and Publish ML pipeline worker as consumer
 
 on:
   workflow_dispatch:
@@ -62,9 +62,9 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/blast/docker/microservice.Dockerfile
+        file: ./projects/blast/docker/consumer.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-blast:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-blast:consumer-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
@@ -73,9 +73,9 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/evotune/docker/microservice.Dockerfile
+        file: ./projects/evotune/docker/consumer.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-evotune:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-evotune:consumer-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
@@ -84,9 +84,9 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/fittop/docker/microservice.Dockerfile
+        file: ./projects/fittop/docker/consumer.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-fittop:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-fittop:consumer-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -95,9 +95,9 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./projects/mutation/docker/microservice.Dockerfile
+        file: ./projects/mutation/docker/consumer.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mutation:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mutation:consumer-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
   
