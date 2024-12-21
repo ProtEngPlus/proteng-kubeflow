@@ -19,7 +19,7 @@ async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
     try:
         requestBody = RequestEvotuneBody(**json.loads(body))
-        logger.info(f"[x] Received message: {requestBody.model_dump()}")
+        logger.info(f"[x] Received message: {requestBody.dict()}")
 
         evotuneThread = threading.Thread(target=runEvotuneThread, args=(requestBody,))
         evotuneThread.start()
@@ -32,7 +32,7 @@ async def handle_message(body, logger):
 async def main(loop):
     logger = getLogger("Consumer")
     conn_url = os.getenv("RABBITMQ_URL")
-    queue_name = "run_job.evotune"
+    binding_key = "evotune.unirep"
 
     try:
         logger.info("Connecting to RabbitMQ")
@@ -45,13 +45,21 @@ async def main(loop):
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
-        queue = await channel.declare_queue(queue_name, durable=True)
+       
+        exchange = await channel.declare_exchange("logs_topic", aio_pika.ExchangeType.TOPIC)
+
+        queue = await channel.declare_queue("mutation_queue", exclusive=True)
+        await queue.bind(exchange, routing_key=binding_key)
 
         logger.info("Consuming messages")
-        async with queue.iterator() as queue_iter:
-            async for message in queue_iter:
+        
+        async for message in queue:
+            try:
                 async with message.process():
                     await handle_message(message.body.decode(), logger)
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
+
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
