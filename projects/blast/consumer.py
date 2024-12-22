@@ -56,7 +56,7 @@ async def main(loop):
         
         exchange = await channel.declare_exchange("logs_topic", aio_pika.ExchangeType.TOPIC)
 
-        queue = await channel.declare_queue("mutation_queue", exclusive=True)
+        queue = await channel.declare_queue("blast_queue", exclusive=True)
         await queue.bind(exchange, routing_key=binding_key)
         
         logger.info("Consuming messages")
