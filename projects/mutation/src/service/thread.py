@@ -20,7 +20,7 @@ def runMutationThread(requestBody: RequestMutationBody):
 
         # run directed evolution
         logger.info(f"job id {requestBody.job_id}: running directed evolution...")
-        s_records, fitness_records = runDirectedEvoTrajectories(requestBody.input, model, requestBody.config.temperature, requestBody.config.num_iterations, requestBody.config.num_trajectories, params)
+        s_records, fitness_records = runDirectedEvoTrajectories(requestBody.input, model, requestBody.config.temperature, requestBody.config.num_iterations, requestBody.config.num_trajectories, requestBody.config.mutate_pos_range, params)
         logger.info(f"job id {requestBody.job_id}: directed evolution done.")
 
         # Send Success Message to Message Queue
