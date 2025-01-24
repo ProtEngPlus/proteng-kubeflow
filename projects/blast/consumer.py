@@ -24,11 +24,12 @@ async def handle_message(body, logger):
         blastParam = requestBody.config
         blastParam.sequence = requestBody.input
         jobId = requestBody.job_id
+        queryResultId = requestBody.query_result_id
         randomState = requestBody.config.random_state
         del blastParam.random_state
 
         blastThread = threading.Thread(
-            target=runBlastThread, args=(blastParam, jobId, randomState)
+            target=runBlastThread, args=(blastParam, jobId, queryResultId, randomState)
         )
         blastThread.start()
 

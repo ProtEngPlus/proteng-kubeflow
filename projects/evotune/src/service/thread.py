@@ -1,5 +1,7 @@
 import pickle as pkl
-
+import pandas as pd
+import json
+from json import loads, dumps
 from src.model.model import RequestEvotuneBody
 
 from src.logger import evotuneLogger as logger
@@ -16,13 +18,36 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         logger.info(f"job id {requestBody.job_id}: Start Evotune Thread")
 
         # get train set and validation set from DB
-        #   sequence = { 
-        #       "train_set": ["sequence1", "sequence2", ...],
-        #       "out_domain_val_set": ["sequence1", "sequence2", ...]
-        #   }
-        logger.debug("Getting sequences from DB...")
-        sequences = getSequencesFromDB(requestBody)
-        logger.debug("Sequences got!")
+        # sequence = filtered_df from blast
+        logger.info("Getting sequences from DB...")
+    
+        filtered_df = pd.DataFrame.from_records([query.dict() for query in requestBody.query_result])
+        filtered_df.index = range(len(filtered_df))
+        
+        data = getSequencesFromDB(requestBody)
+        randomState = data['randomState']
+        
+        logger.info("Sequences got!")
+        
+        # move from blast
+        if filtered_df['score'].sum() == 0:
+            logger.warning("The 'score' column has all zero values. Falling back to simple random sampling.")
+            # Use simple random sampling without weights
+            outDomainValSet = filtered_df.sample(frac=0.1, random_state=randomState)
+            trainSet = filtered_df.drop(outDomainValSet.index)
+        else:
+            # Perform weighted sampling
+            outDomainValSet = filtered_df.sample(frac=0.1, weights="score", random_state=randomState)
+            trainSet = filtered_df.drop(outDomainValSet.index)
+
+        outDomainValSet = outDomainValSet["sequences"].tolist()
+        trainSet = trainSet["sequences"].tolist()
+
+        # Create a dictionary to store the results
+        sequences = {
+            "train_set": trainSet,
+            "out_domain_val_set": outDomainValSet,
+        }
 
         # Evotune
         logger.info(f"job id {requestBody.job_id}: start evotuning")

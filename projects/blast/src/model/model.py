@@ -62,6 +62,7 @@ class BlastParams(BaseModel):
 
 class RequestBlastBody(BaseModel):
     job_id: str
+    query_result_id: str
     input: str
     config: BlastParams
     meta: list[str]

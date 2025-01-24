@@ -1,6 +1,6 @@
 import pika
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, Any, List
 import os
 import logging
 import datetime
@@ -33,6 +33,8 @@ class JobUpdateData(BaseModel):
     error: Optional[str] = ""
     mutation_id: Optional[str] = ""
     mutation_result: Optional[Dict[str, float]] = {}
+    query_result_id: Optional[str] = ""
+    query_result: Optional[List[Dict[str, Any]]] = []
 
 
 class JobStatusEventMessage(BaseModel):
