@@ -1,5 +1,6 @@
 import json
-
+from io import StringIO
+from json import loads, dumps
 from pkg.common.db import downloadFromBucket, uploadToBucket
 from src.model.model import RequestEvotuneBody
 from src.const import EVOTUNE_BUCKET_NAME
@@ -7,12 +8,13 @@ from src.const import EVOTUNE_BUCKET_NAME
 def getSequencesFromDB(requestBody: RequestEvotuneBody):
     # Download sequence data from Blast Object Storage
     # sequences = { 
-    #   "train_set": ["sequence1", "sequence2", ...],
-    #   "out_domain_val_set": ["sequence1", "sequence2", ...]
+    #   "query_results": ["sequence1", "sequence2", ...],
+    #   "randomState": int
     # }
     sequences = downloadFromBucket(requestBody.artifact.blast.bucket_name, requestBody.artifact.blast.path)
-    sequences = json.loads(sequences)
-    return sequences
+    sequences = sequences.decode('utf-8')
+    data = json.loads(sequences)
+    return data
 
 def uploadEUnirepToDB(filePath, model_weights):
     # Save evotuned_params to Unirep Object Storage

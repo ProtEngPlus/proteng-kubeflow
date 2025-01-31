@@ -8,6 +8,11 @@ RUN mkdir pkg
 
 COPY /pkg /consumer/pkg
 
+RUN pip install --no-cache-dir numpy==1.26.4
+RUN pip install pydantic
+
+RUN pip install --upgrade pydantic
+
 RUN pip install --no-cache-dir --upgrade -r pkg/common/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 

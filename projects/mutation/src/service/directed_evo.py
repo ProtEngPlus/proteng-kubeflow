@@ -5,11 +5,11 @@ from jax_unirep import get_reps
 from src.logger import mutationLogger as logger
 from src.service.utils import getIntToAa
 
-def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")
+def mutateSequence(seq,m,prev_mut_loc,mutate_pos_range): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")
     for i in range(m): #iterate through number of mutations to add
-        rand_loc = random.randint(prev_mut_loc-8,prev_mut_loc+8) # find random position to mutate
+        rand_loc = random.randint(prev_mut_loc - mutate_pos_range,prev_mut_loc + mutate_pos_range) # find random position to mutate
         while (rand_loc <=0) or (rand_loc >= len(seq)):
-            rand_loc = random.randint(prev_mut_loc-8,prev_mut_loc+8)
+            rand_loc = random.randint(prev_mut_loc - mutate_pos_range,prev_mut_loc + mutate_pos_range)
 
         rand_aa = random.randint(1,21) # find random amino acid to mutate to
         seq = list(seq)
@@ -18,12 +18,12 @@ def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer rep
 
     return seq,rand_loc # output the randomely mutated sequence
 
-def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type sequence, number of mutation iterations, "temperature")		
+def directedEvolution(s_wt,num_iterations,T,mutate_pos_range,Model, params): # input = (wild-type sequence, number of mutation iterations, "temperature")		
     s_traj = [] # initialize an array to keep records of the protein sequences for this trajectory
     y_traj = [] # initialize an array to keep records of the fitness scores for this trajectory
 
     mut_loc_seed = random.randint(0,len(s_wt)) # randomely choose the location of the first mutation in the trajectory
-    s,new_mut_loc = mutateSequence(s_wt, (np.random.poisson(2) + 1),mut_loc_seed) # initial mutant sequence for this trajectory, with m = Poisson(2)+1 mutations
+    s,new_mut_loc = mutateSequence(s_wt, (np.random.poisson(2) + 1),mut_loc_seed, mutate_pos_range) # initial mutant sequence for this trajectory, with m = Poisson(2)+1 mutations
 
     x,_,_ = get_reps([s],params=params,mlstm_size=64)# eUniRep representation of the initial mutant sequence for this trajectory
     feat_cols = ['feat' + str(j) for j in range(1, x.shape[1] + 1)]
@@ -36,7 +36,7 @@ def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type
         mu = np.random.uniform(1,2.5) # "mu" parameter for poisson function: used to control how many mutations to introduce
         m = np.random.poisson(mu-1) + 1 # how many random mutations to apply to current sequence
 
-        s_new,new_mut_loc = mutateSequence(s, m, new_mut_loc) # new trial sequence, produced from "m" random mutations
+        s_new,new_mut_loc = mutateSequence(s, m, new_mut_loc, mutate_pos_range) # new trial sequence, produced from "m" random mutations
 
         x_new,_,_ = get_reps([s_new],params=params,mlstm_size=64)
         feat_cols = ['feat' + str(j) for j in range(1, x_new.shape[1] + 1)]
@@ -56,12 +56,12 @@ def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type
 
     return s_traj, y_traj # output = (sequence record for trajectory, fitness score recorf for trajectory)
 
-def runDirectedEvoTrajectories(s_wt, Model, T, num_iterations, num_trajectories, params):
+def runDirectedEvoTrajectories(s_wt, Model, T, num_iterations, num_trajectories, mutate_pos_range, params):
     s_records = [] # initialize list of sequence records
     y_records = [] # initialize list of fitness score records
 
     for i in range(num_trajectories): #iterate through however many mutation trajectories we want to sample
-        s_traj, y_traj = directedEvolution(s_wt,num_iterations,T,Model,params) # call the directed evolution function, outputting the trajectory sequence and fitness score records
+        s_traj, y_traj = directedEvolution(s_wt,num_iterations,T,mutate_pos_range,Model,params) # call the directed evolution function, outputting the trajectory sequence and fitness score records
 
         s_records.append(s_traj) # update the sequence trajectory records for this full mutagenesis trajectory
         y_records.append(y_traj) # update the fitness trajectory records for this full mutagenesis trajectory
