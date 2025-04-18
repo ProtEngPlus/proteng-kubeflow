@@ -1,0 +1,44 @@
+import sys
+import os
+
+# sys.path.append("../../../..")
+import logging
+import pandas as pd
+
+# Correct the path to the src directory in the current project
+src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src'))
+sys.path.insert(0, src_dir)
+
+from service.train import trainESM
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+def main():
+    # Sample training and validation sets (short dummy sequences for testing)
+    trainSet = ["MKTAYIAKQRQISFVKSHFSRQDILD"]  # Example protein sequence
+    outDomainValSet = ["GHPDYKVDVFGCGRVNKEVHF"]  # Another example sequence
+
+    # Dummy config dictionary (not used but passed to match function signature)
+    config = {
+        'n_epochs_config': 1,  # Example: Set number of epochs for the test
+        'learning_rate_config': 1e-5,  # Example: Set learning rate for the test
+        'weight_decay': 0.01  # Example: Set weight decay for the test
+    }
+
+
+    logger.info("Starting ESM training test...")
+
+    # Run trainESM
+    df = trainESM(trainSet, outDomainValSet, config)
+
+    # Log output DataFrame
+    logger.info(f"Generated DataFrame:\n{df}")
+
+    # Save DataFrame to a CSV file for verification
+    df.to_csv("output_test.csv", index=False)
+    logger.info("Saved DataFrame to output_test.csv")
+
+if __name__ == "__main__":
+    main()

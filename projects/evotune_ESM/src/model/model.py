@@ -30,12 +30,11 @@ class QueryResult(BaseModel):
     organisms: str
     
 class EvotuneESMParams(BaseModel):
-    n_trials: int | None = 2
-    n_splits: int | None = 2
-    n_epochs_config_low: int | None = 1
-    n_epochs_config_high: int | None = 1
-    learning_rate_config_low: float | None = 1e-5
-    learning_rate_config_high: float | None = 1e-3
+    # n_trials: int | None = 2
+    # n_splits: int | None = 2
+    n_epochs_config: int | None = 1
+    learning_rate_config: float | None = 1e-5
+    weight_decay: float | None = 0.01
     
 class RequestEvotuneESMBody(BaseModel):
     job_id: str
