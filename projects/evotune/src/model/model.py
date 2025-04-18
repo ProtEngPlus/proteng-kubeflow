@@ -32,7 +32,8 @@ class ArtifactPath(BaseModel):
 
 
 class ArtifactMap(BaseModel):
-    blast: ArtifactPath
+    blast: Optional[ArtifactPath] = None
+    mmseqs2: Optional[ArtifactPath] = None
 
 
 class RequestEvotuneBody(BaseModel):
