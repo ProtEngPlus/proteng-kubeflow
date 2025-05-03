@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 import json
 from pkg.common.db import uploadToBucket
@@ -14,9 +15,7 @@ def runMMseqs2Thread(mmseqs2Params : MMseqs2Params, jobId, queryResultId, random
     try:
         logger.info(f"job id {jobId}: Running MMseqs2")
 
-        hsp_cov = mmseqs2Params.hsp_cov
         seq_length = mmseqs2Params.seq_length
-        del mmseqs2Params.hsp_cov
 
         current_dir = os.getcwd()
         QUERY_FILE = "query.fasta"
@@ -44,7 +43,13 @@ def runMMseqs2Thread(mmseqs2Params : MMseqs2Params, jobId, queryResultId, random
             f"{current_dir}/{DB_FILE}",
             f"{current_dir}/{RESULT_FILE}",
             f"{current_dir}/{TMP_DIR}",
-            "--format-output", "tseq,raw,bits,qstart,qend,evalue,target,pident,tlen,theader"
+            "--format-output", "tseq,raw,bits,qstart,qend,evalue,target,pident,tlen,alnlen,theader",
+            "--max-seqs", str(mmseqs2Params.max_seqs),
+            "-e", str(mmseqs2Params.e),
+            "--min-seq-id", str(mmseqs2Params.min_seq_id / 100),
+            "--min-aln-len", str(mmseqs2Params.min_aln_len),
+            "--cov-mode", str(mmseqs2Params.cov_mode),
+            "-c", str(mmseqs2Params.c / 100)
         ]
         raw_result = subprocess.run(cmd, capture_output=True, text=True)
         
@@ -81,7 +86,7 @@ def runMMseqs2Thread(mmseqs2Params : MMseqs2Params, jobId, queryResultId, random
             
             processed_list.append(row)
 
-        df = pd.DataFrame(processed_list, columns=["sequences", "score", "max_score", "hsp_query_from", "hsp_query_to", "e_values", "accession", "percent_identity", "acc_len", "description", "organisms"])
+        df = pd.DataFrame(processed_list, columns=["sequences", "score", "max_score", "hsp_query_from", "hsp_query_to", "e_values", "accession", "percent_identity", "acc_len", "aln_len", "description", "organisms"])
         
         df['score'] = df['score'].astype(int)
         df['max_score'] = df['max_score'].astype('float64')
@@ -90,17 +95,29 @@ def runMMseqs2Thread(mmseqs2Params : MMseqs2Params, jobId, queryResultId, random
         df['e_values'] = df['e_values'].astype('float64')
         df['percent_identity'] = df['percent_identity'].astype('float64')
         df['acc_len'] = df['acc_len'].astype(int)
+        df['aln_len'] = df['aln_len'].astype(int)
         df['length'] = df['sequences'].apply(len)
-        df['query_cover'] = ((df['hsp_query_to'] - df['hsp_query_from'] + 1) / df['length']) * 100
         df["Id"] = [str(ObjectId()) for _ in range(len(df))]
         df["is_selected"] = [True for _ in range(len(df))]
+
+        query_length = len(mmseqs2Params.sequence)
+        cov_mode = mmseqs2Params.cov_mode
+
+        if cov_mode == 1 or cov_mode == 4:
+            df['query_cover'] = (df['aln_len'] / df['length']) * 100
+        elif cov_mode == 2 or cov_mode == 3:
+            df['query_cover'] = (df['aln_len'] / query_length) * 100
+        else:
+            df['query_cover'] = (df['aln_len'] / np.maximum(query_length, df['length'])) * 100
         
-        filtered_df = df[(df['query_cover'] > hsp_cov) & (df['length'] < seq_length)].dropna(subset=['query_cover'])
+        df.drop(columns=['aln_len'], inplace=True)
+
+        filtered_df = df[df['length'] < seq_length].dropna(subset=['query_cover'])
         isEmpty = False
         # Check if filtered_df is empty and log or return an empty list if true
         if filtered_df.empty:
             logger.info("No rows match the filter conditions, returning empty list.")
-            filtered_df = df[(df['query_cover'] > hsp_cov)].dropna(subset=['query_cover'])
+            filtered_df = df.dropna(subset=['query_cover'])
             isEmpty = True
 
         query_result = filtered_df.to_dict(orient='records')    

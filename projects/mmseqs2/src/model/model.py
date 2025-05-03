@@ -3,12 +3,14 @@ from typing import Optional
 
 class MMseqs2Params(BaseModel):
     sequence: Optional[str] = ""
-    expect: Optional[float] = 10.0
-    hitlist_size: Optional[int] = 50
-    hsp_cov : Optional[int] = 0
-    perc_ident: Optional[int] = None
+    max_seqs: Optional[int] = 50
+    e: Optional[float] = 10.0
+    min_seq_id: Optional[float] = 0.0
+    min_aln_len : Optional[int] = 0
+    cov_mode: Optional[int] = 0
+    c: Optional[float] = 0.0,
+    seq_length: Optional[int] = 100
     random_state: Optional[int] = 2023
-    seq_length: Optional[int] = 100,
 
 
 class RequestMMseqs2Body(BaseModel):
