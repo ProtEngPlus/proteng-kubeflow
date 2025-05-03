@@ -5,26 +5,26 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672" 
-      - "15672:15672" 
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
     networks:
       - test-network
     healthcheck:
-      test: ["CMD-SHELL", "rabbitmqctl status"]
+      test: [ "CMD-SHELL", "rabbitmqctl status" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   proteng-mutation:
-    image: proteng-mutation  
+    image: proteng-mutation
     container_name: proteng-mutation
     ports:
-      - "8083:8080" 
+      - "8083:8080"
     env_file:
-      - .env 
+      - .env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -32,14 +32,14 @@ services:
       - test-network
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-  
+
   proteng-fittop:
-    image: proteng-fittop  
+    image: proteng-fittop
     container_name: proteng-fittop
     ports:
-      - "8084:8080" 
+      - "8084:8080"
     env_file:
-      - .env 
+      - .env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -49,12 +49,12 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   proteng-evotune:
-    image: proteng-evotune  
+    image: proteng-evotune
     container_name: proteng-evotune
     ports:
-      - "8085:8080" 
+      - "8085:8080"
     env_file:
-      - .env 
+      - .env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -64,12 +64,27 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
   proteng-blast:
-    image: proteng-blast  
+    image: proteng-blast
     container_name: proteng-blast
     ports:
-      - "8086:8080" 
+      - "8086:8080"
     env_file:
-      - .env 
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - test-network
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+
+  proteng-mmseqs2:
+    image: proteng-mmseqs2
+    container_name: proteng-mmseqs2
+    ports:
+      - "8087:8080"
+    env_file:
+      - .env
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -18,7 +18,7 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         logger.info(f"job id {requestBody.job_id}: Start Evotune Thread")
 
         # get train set and validation set from DB
-        # sequence = filtered_df from blast
+        # sequence = filtered_df from protein query
         logger.info("Getting sequences from DB...")
     
         filtered_df = pd.DataFrame.from_records([query.dict() for query in requestBody.query_result])
@@ -29,7 +29,7 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         
         logger.info("Sequences got!")
         
-        # move from blast
+        # move from protein query
         if filtered_df['score'].sum() == 0:
             logger.warning("The 'score' column has all zero values. Falling back to simple random sampling.")
             # Use simple random sampling without weights
