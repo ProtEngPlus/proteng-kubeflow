@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Dict, List
 
 class ArtifactPath(BaseModel):
     bucket_name: str
@@ -19,5 +20,5 @@ class RequestMutationBody(BaseModel):
     input: str
     mutation_id: str
     config: MutationParams
-    artifact: ArtifactMap
+    artifact: Dict[str, ArtifactPath]
     meta: list[str]
