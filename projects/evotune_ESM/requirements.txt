@@ -13,5 +13,8 @@ aio_pika==9.4.0
 pymongo==4.10.1
 torch>=2.0.0
 fair-esm==2.0.0
-fairseq==0.12.2
 numpy>=1.21.0
+biopython==1.81
+transformers==4.39.3
+datasets==2.19.1
+optuna==3.6.1

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Dict, List
 
 class FitTopParams(BaseModel):
     train_batch_sizes: list[int] | None = [24, 64, 96]
@@ -21,6 +22,6 @@ class RequestFitTopBody(BaseModel):
     job_id: str
     input: str
     config: FitTopParams
-    artifact: ArtifactMap
+    artifact: Dict[str, ArtifactPath]
     lab_result: LabResult
     meta: list[str]

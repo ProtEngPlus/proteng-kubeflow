@@ -1,16 +1,19 @@
 import sys
 import os
-# print(sys.path)
+print(sys.path)
 
 # Add the root directory (proteng-kubeflow) to sys.path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))
-sys.path.append(project_root)
+# Add the proteng-kubeflow root directory to sys.path
+pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../pkg'))
+if pkg_path not in sys.path:
+    sys.path.insert(0, pkg_path)
+
 
 # sys.path.append("../../../..")
 
 
 import logging
-import pkg.common.logger as protenglog
+import common.logger as protenglog
 import pandas as pd
 import numpy as np
 
@@ -76,14 +79,6 @@ class EsmForMaskedLMWithoutLastLayer(nn.Module):
 
 
 def trainESM(trainSet, outDomainValSet, config):
-    torch.mps.empty_cache()
-    if torch.backends.mps.is_available():
-        mps_device = torch.device("mps")
-        x = torch.ones(1, device=mps_device)
-        print (x)
-    else:
-        print ("MPS device not found.")
-        
     model_checkpoint = "facebook/esm2_t33_650M_UR50D"
     
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
@@ -105,52 +100,49 @@ def trainESM(trainSet, outDomainValSet, config):
 
     model = AutoModelForMaskedLM.from_pretrained(model_checkpoint)
     
-    with tempfile.TemporaryDirectory() as temp_dir:
-        training_args = TrainingArguments(
-            output_dir="eESM-BIOTEC-TreS",
-            # evaluation_strategy="epoch",
-            learning_rate=config['learning_rate_config'],
-            num_train_epochs=config['n_epochs_config'],
-            weight_decay=config['weight_decay'],
-            push_to_hub=False,
-        )
+    temp_dir = tempfile.TemporaryDirectory()
+    training_args = TrainingArguments(
+        output_dir=temp_dir.name,
+        save_strategy="steps",  # save every X steps
+        save_steps=100,
+        eval_strategy="epoch",
+        learning_rate=config.learning_rate_config,
+        num_train_epochs=config.n_epochs_config,
+        weight_decay=config.weight_decay,
+        push_to_hub=False,
+    )
 
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=test_dataset,
-            data_collator=data_collator,
-        )
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=test_dataset,
+        data_collator=data_collator,
+    )
 
-        trainer.train()
-        
-        checkpoint_path = get_latest_checkpoint_by_number(temp_dir)
-
-        model = AutoModelForMaskedLM.from_pretrained(checkpoint_path)
-        model = EsmForMaskedLMWithoutLastLayer(model)
+    trainer.train()
     
-    _, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
+    print("Finished training. Checkpoint directory contents:")
+    print(os.listdir(temp_dir.name))
+
+    checkpoint_path = get_latest_checkpoint_by_number(temp_dir.name)
+    model = AutoModelForMaskedLM.from_pretrained(checkpoint_path)
+    model = EsmForMaskedLMWithoutLastLayer(model)
 
     # Load ESM-2 model
-    batch_converter = alphabet.get_batch_converter()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
     model.eval()  # disables dropout for deterministic results
-    
-    # Prepare data
-    data = [(f"seq{i+1}", seq) for i, seq in enumerate(trainSet + outDomainValSet)]
-    batch_labels, batch_strs, batch_tokens = batch_converter(data)
-    batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
     
     # Create a DataFrame to store the sequence representations
     df = pd.DataFrame()
     
     # Extract per-residue representations for each sequence
     with torch.no_grad():
-        for i in range(len(batch_tokens)):
-            tokens = batch_tokens[i]
-
-            # Convert tokens to a tensor
-            input_tokens = tokens.clone().detach()
+        for i, seq in enumerate(trainSet + outDomainValSet):
+            inputs = tokenizer(seq, return_tensors="pt", padding=True, truncation=True)
+            input_tokens = inputs["input_ids"].squeeze(0)  # shape: (seq_len,)
+            input_tokens = input_tokens.to(device)
 
             results = model(input_tokens.unsqueeze(0))
             #token_representations = results["representations"][33]
@@ -171,9 +163,8 @@ def trainESM(trainSet, outDomainValSet, config):
 
             print(i)
 
-    print(df, flush=True)
+    # print(df, flush=True)
 
-    df.to_feather(directory_path + 'BIOTEC-eESM-avg.feather')
     return df
     
     

@@ -1,3 +1,16 @@
+import sys
+import os
+
+
+# # Add the root directory (proteng-kubeflow) to sys.path
+# # Add the proteng-kubeflow root directory to sys.path
+# pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../pkg'))
+# if pkg_path not in sys.path:
+#     sys.path.insert(0, pkg_path)
+
+# print(sys.path)
+
+
 import pickle as pkl
 import pandas as pd
 import json
@@ -40,8 +53,8 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
             outDomainValSet = filtered_df.sample(frac=0.1, weights="score", random_state=randomState)
             trainSet = filtered_df.drop(outDomainValSet.index)
 
-        outDomainValSet = outDomainValSet["sequences"].tolist()
-        trainSet = trainSet["sequences"].tolist()
+        outDomainValSet = outDomainValSet["sequences"].tolist()[:2]
+        trainSet = trainSet["sequences"].tolist()[:2]
 
         # Create a dictionary to store the results
         sequences = {
@@ -51,16 +64,17 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
 
         # Evotune
         logger.info(f"job id {requestBody.job_id}: start evotuning")
-        _, evotuned_params = trainESM(sequences["train_set"], sequences["out_domain_val_set"], requestBody.config)
+        df = trainESM(sequences["train_set"], sequences["out_domain_val_set"], requestBody.config)
+        esm_np = df.to_numpy()
         logger.info(f"job id {requestBody.job_id}: training done.")
 
         # Convert evotuned_params to pkl file
-        model_weights = pkl.dumps(evotuned_params)
+        model_weights = pkl.dumps(esm_np)
 
         # Save model_weights (pkl file) to Unirep Object Storage
-        logger.debug("Saving evotuned_params...")
+        logger.debug("Saving esm_np...")
         uploadESMToDB(requestBody.job_id+".pkl", model_weights)
-        logger.info(f"job id {requestBody.job_id}: evotuned_params saved")
+        logger.info(f"job id {requestBody.job_id}: esm_np saved")
 
         # Send Success Message to Message Queue
         logger.debug("Sending success message to MQ...")

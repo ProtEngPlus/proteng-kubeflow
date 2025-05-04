@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.model.model import RequestEvotuneBody
+from src.model.model import RequestEvotuneESMBody
 from src.service.thread import runEvotuneThread
 from pkg.common.logger import getLogger
 
 async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
     try:
-        requestBody = RequestEvotuneBody(**json.loads(body))
+        requestBody = RequestEvotuneESMBody(**json.loads(body))
         logger.info(f"[x] Received message: {requestBody.dict()}")
 
         evotuneThread = threading.Thread(target=runEvotuneThread, args=(requestBody,))

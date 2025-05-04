@@ -32,13 +32,17 @@ def main():
 
     # Run trainESM
     df = trainESM(trainSet, outDomainValSet, config)
+    esm_np = df.to_numpy()
+    print(esm_np)
 
     # Log output DataFrame
     logger.info(f"Generated DataFrame:\n{df}")
 
     # Save DataFrame to a CSV file for verification
-    df.to_csv("output_test.csv", index=False)
-    logger.info("Saved DataFrame to output_test.csv")
+    directory_path = "service/output/"
+    os.makedirs(directory_path, exist_ok=True)
+    df.to_feather(directory_path + 'BIOTEC-eESM-avg.feather')
+    logger.info("Saved DataFrame to BIOTEC-eESM-avg.feather")
 
 if __name__ == "__main__":
     main()
