@@ -2,7 +2,7 @@ import pika
 import json
 
 def main():
-    connection = pika.BlockingConnection()
+    connection = pika.BlockingConnection(pika.URLParameters("amqp://admin:pass@localhost:5672/"))
     channel = connection.channel()
 
     # edit queue name here
