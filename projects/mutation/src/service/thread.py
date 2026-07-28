@@ -8,19 +8,23 @@ from src.logger import mutationLogger as logger
 def runMutationThread(requestBody: RequestMutationBody):
     try:
         logger.info(f"job id {requestBody.job_id}: Start Mutation Thread")
+
+        evotune_model_type = requestBody.meta[1]
+        fittop_model_type = requestBody.meta[2]
+
         # get e unirep params from DB
         logger.debug("Getting e unirep params from DB...")
-        params = getParamsFromDB(requestBody.artifact.unirep.bucket_name, requestBody.artifact.unirep.path)
+        params = getParamsFromDB(requestBody.artifact[requestBody.meta[1]].bucket_name, requestBody.artifact[requestBody.meta[1]].path)
         logger.debug("Params got!")
 
         # get fit top model from DB
         logger.debug("Getting fit top model from DB...")
-        model = getModelFromDB(requestBody.artifact.ridgecv.bucket_name, requestBody.artifact.ridgecv.path)
+        model = getModelFromDB(requestBody.artifact[requestBody.meta[2]].bucket_name, requestBody.artifact[requestBody.meta[2]].path)
         logger.debug("Model got!")
 
         # run directed evolution
         logger.info(f"job id {requestBody.job_id}: running directed evolution...")
-        s_records, fitness_records = runDirectedEvoTrajectories(requestBody.input, model, requestBody.config.temperature, requestBody.config.num_iterations, requestBody.config.num_trajectories, params)
+        s_records, fitness_records = runDirectedEvoTrajectories(requestBody.input, model, requestBody.config.temperature, requestBody.config.num_iterations, requestBody.config.num_trajectories, requestBody.config.mutate_pos_range, params, evotune_model_type)
         logger.info(f"job id {requestBody.job_id}: directed evolution done.")
 
         # Send Success Message to Message Queue

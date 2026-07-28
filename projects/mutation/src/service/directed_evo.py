@@ -5,11 +5,11 @@ from jax_unirep import get_reps
 from src.logger import mutationLogger as logger
 from src.service.utils import getIntToAa
 
-def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")
+def mutateSequence(seq,m,prev_mut_loc,mutate_pos_range): # produce a mutant sequence (integer representation), given an initial sequence and the number of mutations to introduce ("m")
     for i in range(m): #iterate through number of mutations to add
-        rand_loc = random.randint(prev_mut_loc-8,prev_mut_loc+8) # find random position to mutate
+        rand_loc = random.randint(prev_mut_loc - mutate_pos_range,prev_mut_loc + mutate_pos_range) # find random position to mutate
         while (rand_loc <=0) or (rand_loc >= len(seq)):
-            rand_loc = random.randint(prev_mut_loc-8,prev_mut_loc+8)
+            rand_loc = random.randint(prev_mut_loc - mutate_pos_range,prev_mut_loc + mutate_pos_range)
 
         rand_aa = random.randint(1,21) # find random amino acid to mutate to
         seq = list(seq)
@@ -18,15 +18,28 @@ def mutateSequence(seq,m,prev_mut_loc): # produce a mutant sequence (integer rep
 
     return seq,rand_loc # output the randomely mutated sequence
 
-def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type sequence, number of mutation iterations, "temperature")		
+
+def get_embedding(seq, representation_type, repr_source):
+    if representation_type == "unirep":
+        reps, _, _ = get_reps([seq], params=repr_source, mlstm_size=64)
+        return reps
+    elif representation_type == "ESM":
+        reps = repr_source.reshape(1, -1)
+        return reps
+        
+    else:
+        raise ValueError("Unsupported representation_type")
+
+def directedEvolution(s_wt,num_iterations,T,mutate_pos_range,Model, params, representation_type): # input = (wild-type sequence, number of mutation iterations, "temperature")		
     s_traj = [] # initialize an array to keep records of the protein sequences for this trajectory
     y_traj = [] # initialize an array to keep records of the fitness scores for this trajectory
 
     mut_loc_seed = random.randint(0,len(s_wt)) # randomely choose the location of the first mutation in the trajectory
-    s,new_mut_loc = mutateSequence(s_wt, (np.random.poisson(2) + 1),mut_loc_seed) # initial mutant sequence for this trajectory, with m = Poisson(2)+1 mutations
+    s,new_mut_loc = mutateSequence(s_wt, (np.random.poisson(2) + 1),mut_loc_seed, mutate_pos_range) # initial mutant sequence for this trajectory, with m = Poisson(2)+1 mutations
 
-    x,_,_ = get_reps([s],params=params,mlstm_size=64)# eUniRep representation of the initial mutant sequence for this trajectory
+    x = get_embedding(s, representation_type, params)# eUniRep, eESM representation of the initial mutant sequence for this trajectory
     feat_cols = ['feat' + str(j) for j in range(1, x.shape[1] + 1)]
+
     x = pd.DataFrame(x, columns=feat_cols)
 
     y = Model.predict(x) # predicted fitness score for the initial mutant sequence for this trajectory
@@ -36,9 +49,14 @@ def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type
         mu = np.random.uniform(1,2.5) # "mu" parameter for poisson function: used to control how many mutations to introduce
         m = np.random.poisson(mu-1) + 1 # how many random mutations to apply to current sequence
 
-        s_new,new_mut_loc = mutateSequence(s, m, new_mut_loc) # new trial sequence, produced from "m" random mutations
+        s_new,new_mut_loc = mutateSequence(s, m, new_mut_loc, mutate_pos_range) # new trial sequence, produced from "m" random mutations
 
-        x_new,_,_ = get_reps([s_new],params=params,mlstm_size=64)
+        try:
+            x_new = get_embedding(s_new, representation_type, params)
+        except ValueError as e:
+            logger.warning(f"Skipping sequence due to missing embedding: {s_new}")
+            continue
+
         feat_cols = ['feat' + str(j) for j in range(1, x_new.shape[1] + 1)]
         x_new = pd.DataFrame(x_new, columns=feat_cols)
 
@@ -56,12 +74,12 @@ def directedEvolution(s_wt,num_iterations,T,Model, params): # input = (wild-type
 
     return s_traj, y_traj # output = (sequence record for trajectory, fitness score recorf for trajectory)
 
-def runDirectedEvoTrajectories(s_wt, Model, T, num_iterations, num_trajectories, params):
+def runDirectedEvoTrajectories(s_wt, Model, T, num_iterations, num_trajectories, mutate_pos_range, params, representation_type):
     s_records = [] # initialize list of sequence records
     y_records = [] # initialize list of fitness score records
 
     for i in range(num_trajectories): #iterate through however many mutation trajectories we want to sample
-        s_traj, y_traj = directedEvolution(s_wt,num_iterations,T,Model,params) # call the directed evolution function, outputting the trajectory sequence and fitness score records
+        s_traj, y_traj = directedEvolution(s_wt,num_iterations,T,mutate_pos_range,Model,params,representation_type) # call the directed evolution function, outputting the trajectory sequence and fitness score records
 
         s_records.append(s_traj) # update the sequence trajectory records for this full mutagenesis trajectory
         y_records.append(y_traj) # update the fitness trajectory records for this full mutagenesis trajectory

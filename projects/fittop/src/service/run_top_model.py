@@ -9,18 +9,33 @@ from pkg.common.db import uploadToBucket
 from pkg.common.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 from src.logger import fittopLogger as logger
 from src.const import FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID
-from src.service.top_model_utils import formatData,loadSeqs,doRidgeRegression
+from src.service.top_model_utils import formatData,loadSeqs,doRidgeRegression,loadESMseqs
 from src.model.model import RequestFitTopBody
 
 def doFitTop(requestBody: RequestFitTopBody):
     try:
         data = formatData(requestBody.lab_result.total, requestBody.lab_result.sequences, requestBody.lab_result.scores)
         logger.info(f"job id {requestBody.job_id}: load data ok")
-        seqs = loadSeqs(
-            seqs_df=data,
-            bucket_name=requestBody.artifact.unirep.bucket_name,
-            model_path=requestBody.artifact.unirep.path
-        )
+
+        logger.info(f"model path: {requestBody.artifact[requestBody.meta[1]].path}")
+
+        evotune_model_type = requestBody.meta[1]
+
+        if evotune_model_type == "unirep":
+            seqs = loadSeqs(
+                seqs_df=data,
+                bucket_name = requestBody.artifact[requestBody.meta[1]].bucket_name,
+                model_path = requestBody.artifact[requestBody.meta[1]].path
+            )
+        elif evotune_model_type == "ESM":
+            seqs = loadESMseqs(
+                seqs_df=data,
+                bucket_name = requestBody.artifact[requestBody.meta[1]].bucket_name,
+                model_path = requestBody.artifact[requestBody.meta[1]].path
+            )
+        else:
+            raise ValueError(f"Unsupported model type: {evotune_model_type}")
+
         logger.info(f"job id {requestBody.job_id}: load seqs ok")
         top_model = doRidgeRegression(
             this_df=seqs,
