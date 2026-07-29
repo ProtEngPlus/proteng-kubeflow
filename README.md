@@ -4,9 +4,10 @@ This repository is basically a place that create _**microservices docker image**
 
 PS. at first **_we_**(the first proteng students group to do this project) plan to use kubeflow for our pipeline (hence the name "kubeflow"). But later on into the project, we decided not to use it(kubeflow) and you can find more info on [_devops_ _repository_](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops)
 
+See [SETUP.md](./SETUP.md) to run a microservice locally, and [CONTRIBUTING.md](./CONTRIBUTING.md) for commit conventions and pre-commit hooks.
+
 ## Table of Contents
 - [Project Structure](#project-structure)
-- [How to run](#running-in-local)
 - [How to add new microservice](#how-to-add-new-microservice)
 - [How to use microservice in ML pipeline](#how-to-use-microservice-in-production)
 
@@ -43,40 +44,6 @@ The `pkg` folder contains the common services/files that is shared across micros
             └── data                  
                 └── example_data.txt          
 </pre>
-
-## Running In Local
-
-### create `.env` file with these info
-
-- **Caution!! please remove below info as soon as possible for good practices and keep it somewhere safe!!**
-```
-PROJECT_ID="cucpbioinfo"
-PRIVATE_KEY_ID="ebc8cba8ab4f978a050bcb9fbafe20f358e6ce9f"
-PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCe6FaYArm/yBf5\nSO7jJVWRCNZ3evIeZ7df9Un6YtB2kelst7KGO/caGFM1IP8qdTDXZq0CTYP/6HY3\nhicVl7GEBZJyIILLVisLaqjOqNkfkHbgAEsqJr5aDL2Y8zVf2aRiM6rbrr5g+x6k\nMilGm7Jzn5HzoXwf0wD2gRxz4mkDeTmmDkeLD/Bb+RQi4ZSVYdBa+9vhkHDWxmI0\nIiRhg0QjFTqSKvKbIxOImIJz7LaTd+1asMpZTdB/bxkzZNr4Deuc7cpWoEQ6k3M/\nAzzfmkqgYAlCDiPCiSKNcVY3YvBSZce+9VBtWvlM0ggNl7sjjtw1dJEn+4ojaFP3\npCPEDBXZAgMBAAECggEACJK430UgX9or/vFCICOawPMk3PfXWbAXSthJODa+D/OR\n0CF+AnN4QqJm1NI1qgT+EFT0BxCHC1avkBHPCIFxXJHPY5Rg8hbxRhGoT1P5ONR6\nsV2asIi8EtAmp3qRmdz8Wyb19BmyoDlUHyAsrWhHgajtfyMqdu4Tmnj/P7pKl5sM\nKUSjxjrRc6MLuD7WGkbvV2npeUBPASK5dgYT8ThZLyN1B2MOQfKEOyE+0cA1ctzG\nfluKKqwa+/X67zoUAMu9jPE2NRSnGWC2J0mBA0n5PZZlYfyyG12TzivdOqhpYOnY\n4v8DVcxG7Q7u8A7ExB0492Nq75KXKw/oK3dUUtkrDQKBgQDTezG17f/ev16yRqCo\nqsxC3bbM4z9kF4KQuU1gf2f5i6YYoDEZz2OJ7YLfuDpFKNZjSTc/Whe321AGntI8\n4qZsnjrzjQksnLJUafCKvfwqA3H2oovE7p0B+VjHKrDjWSV8Lnl6ujOd2P3oe90V\n3XAWIvr+qB9bMQ+rUXnPPZK3DQKBgQDAW+3jYmjN08+OBf1z4a0FWIr9fwd81NxY\n0eALYMXz8Z7MTasrkh0Iko+MZaTH0yEECkSrLtU+2N6oyL0Hecq8ZdYSC+dWmvqW\nBr+XYAxlPzZMFWTugfwUbtUIJHznbVVhBnQ+oDrxuCa8W/kIp+t4W3c//yAGpKby\nOFRgIhZm/QKBgAazx86JPWu0yu6BeIP/7btMxYdWyGKGsDef98jQIN5yw4/SO9wi\ni3gKk/Q9JXOdqLW600pps4i7JZ0gGW+ei0Gz/hBL7vd/+9LbDKmI/d3jABCd9CoI\nmec/HMYrHzIFWD/IRUdTcWFWSC2/BzGzM+Mvtp6te1jrhCCc02xy+hxdAoGASyyi\nD1cKNkYsuwhEQOFVSN2Nk/vs5TAa3OtIb6nmMquer6E639A+YHdGekvO1fkA0h9h\nLrUiyWjfu36XwTArtuzleDAGvKXcgH0qqvHyZi8J/TnvM/bAmQunXYNE/PyRfVWU\nYFUmNAkPulUHQga900+LjwsZbP8z7z1sXBV2Q9ECgYBzIdjRwbb4L0OYVAFeVd+M\nkvpVifoW6wsu9GKdQePAoJfoyhaROmKaMPwiNOOTZSmZ8JV+r03yPMVvHPtBpTv6\ntfRROvMV48+Ga8UUVEiPIH2iv0JifvpYEONhP5iashExV2E0QFyW5uAijmi6MGpt\nJUnIrdFWsxWajZrjqxQNzg==\n-----END PRIVATE KEY-----\n"
-CLIENT_EMAIL="proteng@cucpbioinfo.iam.gserviceaccount.com"
-CLIENT_ID="114275650348444629249"
-TOKEN_URI="https://oauth2.googleapis.com/token"
-RABBITMQ_URL="amqp://guest:guest@rabbitmq:5672/"
-```
-
-### run rabbitmq docker
-
-```sh
-docker run --name rabbitmq-for-test -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-```
-### run microservice with python
-
-```sh
-cd projects/<project-name>
-python3 <entrypoint>.py
-```
-
-e.g.
-
-```sh
-cd projects/blast
-python3 microservice.py
-```
 
 ## How to add new microservice
 - You can add new microservice in the `projects` directory with the structure stated [above](#project-structure)
