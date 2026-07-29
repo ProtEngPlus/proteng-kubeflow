@@ -1,18 +1,21 @@
-from pydantic import BaseModel, HttpUrl
-from typing import Optional
+from pydantic import BaseModel
+
 
 class RequestBucketBody(BaseModel):
     bucket_name: str
-    file_name: str | None 
+    file_name: str | None
     file: str | None
-    
+
+
 class ArtifactPath(BaseModel):
     bucket_name: str
     path: str
-    
+
+
 class ArtifactMap(BaseModel):
     blast: ArtifactPath
-    
+
+
 class QueryResult(BaseModel):
     id: str
     is_selected: bool
@@ -28,14 +31,16 @@ class QueryResult(BaseModel):
     acc_len: int
     description: str
     organisms: str
-    
+
+
 class EvotuneESMParams(BaseModel):
     # n_trials: int | None = 2
     # n_splits: int | None = 2
     n_epochs_config: int | None = 1
     learning_rate_config: float | None = 1e-5
     weight_decay: float | None = 0.01
-    
+
+
 class RequestEvotuneESMBody(BaseModel):
     job_id: str
     input: str

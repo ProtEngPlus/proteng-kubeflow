@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 NCBI_BLAST_URL = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
 
@@ -55,9 +55,9 @@ class BlastParams(BaseModel):
     template_length: Optional[int] = None
     username: Optional[str] = "blast"
     password: Optional[str] = None
-    hsp_cov : Optional[int] = 0
+    hsp_cov: Optional[int] = 0
     random_state: Optional[int] = 2023
-    seq_length: Optional[int] = 100,
+    seq_length: Optional[int] = (100,)
 
 
 class RequestBlastBody(BaseModel):

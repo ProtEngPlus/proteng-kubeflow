@@ -1,7 +1,9 @@
 import threading
 import sys
+
 sys.path.append("../../")
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from fastapi import FastAPI, APIRouter
@@ -16,11 +18,13 @@ from pkg.common.logger import getLogger
 from pkg.common.fast_api import GetLoggingRouteClass
 
 app = FastAPI()
-router = APIRouter(route_class=GetLoggingRouteClass(getLogger('FastAPI')))
+router = APIRouter(route_class=GetLoggingRouteClass(getLogger("FastAPI")))
+
 
 @app.exception_handler(HTTPException)
 def http_exception_handler(req, e):
     return JSONResponse({"code": 500, "error": str(e)}, 500)
+
 
 @router.post("/mutation")
 def requestEvotune(requestBody: RequestMutationBody):
@@ -31,9 +35,10 @@ def requestEvotune(requestBody: RequestMutationBody):
         # Create and start the MUTATION thread
         mutationThread = threading.Thread(target=runMutationThread, args=(requestBody,))
         mutationThread.start()
-        
+
         return {"code": 200, "message": "started mutation thread"}
     except Exception as e:
         raise e
-    
+
+
 app.include_router(router)

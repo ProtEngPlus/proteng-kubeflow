@@ -1,10 +1,11 @@
 import sys
 import os
+
 print(sys.path)
 
 # Add the root directory (proteng-kubeflow) to sys.path
 # Add the proteng-kubeflow root directory to sys.path
-pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../pkg'))
+pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../pkg"))
 if pkg_path not in sys.path:
     sys.path.insert(0, pkg_path)
 
@@ -15,36 +16,41 @@ if pkg_path not in sys.path:
 import logging
 import common.logger as protenglog
 import pandas as pd
-import numpy as np
 
 # silence TQDM
 if not os.getenv("DEBUG") == "true":
     os.environ["TQDM_DISABLE"] = "1"
-    
+
 # silence optuna logger
 import optuna.logging as optunalog
+
+
 def _silent_optuna_get_logger(__name__):
     optunalogger = protenglog.getLogger(__name__)
     optunalogger.setLevel(logging.ERROR)
     optunalogger.propagate = False
 
+
 optunalog.get_logger = _silent_optuna_get_logger
 
 import torch
-import pandas as pd
-from Bio import SeqIO
 from transformers import AutoTokenizer
 from datasets import Dataset
 from transformers import AutoModelForMaskedLM
 from transformers import DataCollatorForLanguageModeling
 from transformers import TrainingArguments, Trainer
-import esm
 import tempfile
 from torch import nn
 import re
 
+
 def get_latest_checkpoint_by_number(checkpoint_dir):
-    checkpoint_dirs = [f for f in os.scandir(checkpoint_dir) if f.is_dir() and f.name.startswith("checkpoint")]
+    checkpoint_dirs = [
+        f
+        for f in os.scandir(checkpoint_dir)
+        if f.is_dir() and f.name.startswith("checkpoint")
+    ]
+
     def extract_number(f):  # Extract the number after 'checkpoint-'
         match = re.search(r"checkpoint-(\d+)", f.name)
         return int(match.group(1)) if match else -1
@@ -65,6 +71,7 @@ class EsmLMHeadWithoutDecoder(nn.Module):
         hidden_states = self.layer_norm(hidden_states)
         return hidden_states
 
+
 class EsmForMaskedLMWithoutLastLayer(nn.Module):
     def __init__(self, esm_model):
         super().__init__()
@@ -80,9 +87,9 @@ class EsmForMaskedLMWithoutLastLayer(nn.Module):
 
 def trainESM(trainSet, outDomainValSet, config):
     model_checkpoint = "facebook/esm2_t33_650M_UR50D"
-    
+
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
-    
+
     train_tokenized = tokenizer(trainSet)
     test_tokenized = tokenizer(outDomainValSet)
 
@@ -96,10 +103,12 @@ def trainESM(trainSet, outDomainValSet, config):
     test_dataset = test_dataset.add_column("labels", test_labels)
 
     tokenizer.pad_token = tokenizer.eos_token
-    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm_probability=0.15
+    )
 
     model = AutoModelForMaskedLM.from_pretrained(model_checkpoint)
-    
+
     temp_dir = tempfile.TemporaryDirectory()
     training_args = TrainingArguments(
         output_dir=temp_dir.name,
@@ -121,7 +130,7 @@ def trainESM(trainSet, outDomainValSet, config):
     )
 
     trainer.train()
-    
+
     print("Finished training. Checkpoint directory contents:")
     print(os.listdir(temp_dir.name))
 
@@ -133,10 +142,10 @@ def trainESM(trainSet, outDomainValSet, config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()  # disables dropout for deterministic results
-    
+
     # Create a DataFrame to store the sequence representations
     df = pd.DataFrame()
-    
+
     # Extract per-residue representations for each sequence
     with torch.no_grad():
         for i, seq in enumerate(trainSet + outDomainValSet):
@@ -145,26 +154,31 @@ def trainESM(trainSet, outDomainValSet, config):
             input_tokens = input_tokens.to(device)
 
             results = model(input_tokens.unsqueeze(0))
-            #token_representations = results["representations"][33]
+            # token_representations = results["representations"][33]
 
             flattened_representation = results.view(-1)
             # print(flattened_representation.shape)
 
-            flattened_representation = results.view(-1, results.size(-1))  # Reshape to (num_tokens, embedding_size)
+            flattened_representation = results.view(
+                -1, results.size(-1)
+            )  # Reshape to (num_tokens, embedding_size)
             # print(flattened_representation.shape)
-            flattened_representation = flattened_representation.mean(dim=0)  # Compute mean along the first dimension
+            flattened_representation = flattened_representation.mean(
+                dim=0
+            )  # Compute mean along the first dimension
             print(flattened_representation.shape)
 
             # Convert the list of tensors to a DataFrame row by row
             if i == 0:
                 df = pd.DataFrame(flattened_representation.numpy()).T
             else:
-                df = pd.concat([df, pd.DataFrame(flattened_representation.numpy()).T], ignore_index=True)
+                df = pd.concat(
+                    [df, pd.DataFrame(flattened_representation.numpy()).T],
+                    ignore_index=True,
+                )
 
             print(i)
 
     # print(df, flush=True)
 
     return df
-    
-    

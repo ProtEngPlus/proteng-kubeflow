@@ -3,6 +3,7 @@ import sys
 import os
 import asyncio
 import json
+
 sys.path.append("../../")
 
 import aio_pika
@@ -15,18 +16,18 @@ from src.service.thread import runMutationThread
 from src.model.model import RequestMutationBody
 from pkg.common.logger import getLogger
 
+
 async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
     try:
         requestBody = RequestMutationBody(**json.loads(body))
         logger.info(f"[x] Received message: {requestBody.dict()}")
-        
+
         mutationThread = threading.Thread(target=runMutationThread, args=(requestBody,))
         mutationThread.start()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-
 
 
 async def main(loop):
@@ -41,12 +42,14 @@ async def main(loop):
     except Exception as e:
         logger.fatal(f"Error connecting to RabbitMQ: {e}")
         return
-    
+
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
 
-        exchange = await channel.declare_exchange("logs_topic", aio_pika.ExchangeType.TOPIC)
+        exchange = await channel.declare_exchange(
+            "logs_topic", aio_pika.ExchangeType.TOPIC
+        )
 
         queue = await channel.declare_queue("mutation_queue", exclusive=True)
         await queue.bind(exchange, routing_key=binding_key)
@@ -59,8 +62,6 @@ async def main(loop):
                     await handle_message(message.body.decode(), logger)
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
-
-
 
 
 if __name__ == "__main__":

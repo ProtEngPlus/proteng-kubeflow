@@ -1,0 +1,6 @@
+[lint]
+ignore = [
+    "E402", # load_dotenv() intentionally runs before some imports across this repo
+    "F403", # `from pkg.common.publisher import *` is an existing intentional pattern
+    "F405", # follows from F403 above
+]

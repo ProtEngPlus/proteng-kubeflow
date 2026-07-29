@@ -1,5 +1,6 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from typing import Optional
+
 
 class EvotuneParams(BaseModel):
     n_trials: int | None = 2
@@ -8,6 +9,7 @@ class EvotuneParams(BaseModel):
     n_epochs_config_high: int | None = 1
     learning_rate_config_low: float | None = 1e-5
     learning_rate_config_high: float | None = 1e-3
+
 
 class QueryResult(BaseModel):
     id: str
@@ -44,7 +46,8 @@ class RequestEvotuneBody(BaseModel):
     meta: list[str]
     query_result: list[QueryResult]
 
+
 class RequestBucketBody(BaseModel):
     bucket_name: str
-    file_name: str | None 
+    file_name: str | None
     file: str | None

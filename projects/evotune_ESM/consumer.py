@@ -3,6 +3,7 @@ import sys
 import os
 import asyncio
 import json
+
 sys.path.append("../../")
 
 import aio_pika
@@ -14,6 +15,7 @@ load_dotenv()
 from src.model.model import RequestEvotuneESMBody
 from src.service.thread import runEvotuneThread
 from pkg.common.logger import getLogger
+
 
 async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
@@ -28,7 +30,6 @@ async def handle_message(body, logger):
         logger.error(f"Error processing message: {e}")
 
 
-
 async def main(loop):
     logger = getLogger("Consumer")
     conn_url = os.getenv("RABBITMQ_URL")
@@ -41,18 +42,20 @@ async def main(loop):
     except Exception as e:
         logger.fatal(f"Error connecting to RabbitMQ: {e}")
         return
-    
+
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
-       
-        exchange = await channel.declare_exchange("logs_topic", aio_pika.ExchangeType.TOPIC)
+
+        exchange = await channel.declare_exchange(
+            "logs_topic", aio_pika.ExchangeType.TOPIC
+        )
 
         queue = await channel.declare_queue("evotune_ESM_queue", exclusive=True)
         await queue.bind(exchange, routing_key=binding_key)
 
         logger.info("Consuming messages")
-        
+
         async for message in queue:
             try:
                 async with message.process():

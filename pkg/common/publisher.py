@@ -9,6 +9,7 @@ import datetime
 
 logger = logging.getLogger("rabbitmq_publisher")
 
+
 def publishDefaultExchange(rabbitmq_url, queue_name, message):
     connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
     channel = connection.channel()
@@ -18,6 +19,7 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
     channel.basic_publish(exchange="", routing_key=queue_name, body=message)
 
     connection.close()
+
 
 class Artifact(BaseModel):
     bucket_name: str
@@ -47,7 +49,7 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
     rabbitmq_url = os.environ.get("RABBITMQ_URL")
     queue_name = "job_status_event"
 
-    try :
+    try:
         publishDefaultExchange(rabbitmq_url, queue_name, message.json())
     except Exception as err:
         logger.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
@@ -55,7 +57,7 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
 
 if __name__ == "__main__":
     # TEST: publishJobStatusEvent
-    os.environ.update([("RABBITMQ_URL","amqp://guest:guest@localhost:5672/")])
+    os.environ.update([("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")])
     print(datetime.datetime.now().isoformat())
     message = JobStatusEventMessage(
         service_name="job",

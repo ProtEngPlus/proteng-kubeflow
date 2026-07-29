@@ -1,12 +1,12 @@
-import pickle as pkl
 from src.model.model import RequestFitTopBody, ArtifactPath
 from src.service.run_top_model import doFitTop
-from tempfile import TemporaryDirectory
 
 # Prepare mock artifact paths
 artifact_paths = {
     "ESM": ArtifactPath(bucket_name="unirep", path="680b87fd2e1ebf461a875858.pkl"),
-    "blast": ArtifactPath(bucket_name="similar_protein", path="680b87fd2e1ebf461a875858")
+    "blast": ArtifactPath(
+        bucket_name="similar_protein", path="680b87fd2e1ebf461a875858"
+    ),
 }
 
 # Prepare mock request
@@ -18,23 +18,62 @@ mock_request = RequestFitTopBody(
     lab_result={
         "total": 24,
         "sequences": [
-            'ASIQHFHW', 'CSIQHFHW', 'DSIQHFHW', 'ESIQHFHW', 'FSIQHFHW', 'GSIQHFHW',
-            'HSIQHFHW', 'ISIQHFHW', 'JSIQHFHW', 'KSIQHFHW', 'LSIQHFHW', 'MSIQHFHW',
-            'NSIQHFHW', 'OSIQHFHW', 'PSIQHFHW', 'QSIQHFHW', 'RSIQHFHW', 'SSIQHFHW',
-            'TSIQHFHW', 'USIQHFHW', 'VSIQHFHW', 'WSIQHFHW', 'XSIQHFHW', 'YSIQHFHW'
+            "ASIQHFHW",
+            "CSIQHFHW",
+            "DSIQHFHW",
+            "ESIQHFHW",
+            "FSIQHFHW",
+            "GSIQHFHW",
+            "HSIQHFHW",
+            "ISIQHFHW",
+            "JSIQHFHW",
+            "KSIQHFHW",
+            "LSIQHFHW",
+            "MSIQHFHW",
+            "NSIQHFHW",
+            "OSIQHFHW",
+            "PSIQHFHW",
+            "QSIQHFHW",
+            "RSIQHFHW",
+            "SSIQHFHW",
+            "TSIQHFHW",
+            "USIQHFHW",
+            "VSIQHFHW",
+            "WSIQHFHW",
+            "XSIQHFHW",
+            "YSIQHFHW",
         ],
         "scores": [
-            0.002914, 0.00302, 0.002219, 0.004379, 0.002914, 0.00302,
-            0.002219, 0.004379, 0.002914, 0.00302, 0.002219, 0.004379,
-            0.002914, 0.00302, 0.002219, 0.004379, 0.002914, 0.00302,
-            0.002219, 0.004379, 0.002914, 0.00302, 0.002219, 0.004379
-        ]
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+            0.002914,
+            0.00302,
+            0.002219,
+            0.004379,
+        ],
     },
-    meta=["blast", "ESM", "ridgecv", "mutation"]
+    meta=["blast", "ESM", "ridgecv", "mutation"],
 )
 
 # Patch external functions for dry run
-from pkg.common import db, mq
 
 # db.uploadToBucket = lambda bucket, name, data: f"Mock uploaded {name} to {bucket}"
 # mq.publishCompletedJobStatusToMQ = lambda *args, **kwargs: print("✅ Published success message to MQ")
@@ -42,8 +81,8 @@ from pkg.common import db, mq
 
 # Run the function with mock
 
-import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Verify environment variable loading

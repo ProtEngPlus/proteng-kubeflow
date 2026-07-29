@@ -3,9 +3,11 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 import threading
 import sys
+
 sys.path.append("../../")
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.model.model import RequestFitTopBody
@@ -15,11 +17,13 @@ from pkg.common.logger import getLogger
 from pkg.common.fast_api import GetLoggingRouteClass
 
 app = FastAPI()
-router = APIRouter(route_class=GetLoggingRouteClass(getLogger('FastAPI')))
+router = APIRouter(route_class=GetLoggingRouteClass(getLogger("FastAPI")))
+
 
 @app.exception_handler(HTTPException)
 def http_exception_handler(req, e):
     return JSONResponse({"code": 500, "error": str(e)}, 500)
+
 
 @router.post("/top-model")
 def requestTopModel(requestBody: RequestFitTopBody):
@@ -31,5 +35,6 @@ def requestTopModel(requestBody: RequestFitTopBody):
         return {"code": 200, "message": "started fittop thread"}
     except Exception as e:
         raise e
+
 
 app.include_router(router)

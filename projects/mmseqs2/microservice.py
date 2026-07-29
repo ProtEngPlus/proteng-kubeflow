@@ -3,6 +3,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
 import sys
+
 sys.path.append("../../")
 
 from dotenv import load_dotenv
@@ -10,7 +11,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import threading
-import subprocess  # Import subprocess module
 
 from src.model.model import RequestMMseqs2Body, MMseqs2Params
 from src.service.run_mmseqs2 import runMMseqs2Thread
@@ -18,7 +18,8 @@ from pkg.common.fast_api import GetLoggingRouteClass
 from pkg.common.logger import getLogger
 
 app = FastAPI()
-router = APIRouter(route_class=GetLoggingRouteClass(getLogger('FastAPI')))
+router = APIRouter(route_class=GetLoggingRouteClass(getLogger("FastAPI")))
+
 
 @app.exception_handler(HTTPException)
 def http_exception_handler(req, e):
@@ -48,5 +49,6 @@ async def run_mmseqs2(requestBody: RequestMMseqs2Body):
         return {"code": 200, "message": "started mmseqs2 thread"}
     except Exception as e:
         raise e
-    
+
+
 app.include_router(router)

@@ -1,7 +1,13 @@
 import datetime
 
-from pkg.common.publisher import publishJobStatusEvent, JobStatusEventMessage, JobUpdateData, Artifact
+from pkg.common.publisher import (
+    publishJobStatusEvent,
+    JobStatusEventMessage,
+    JobUpdateData,
+    Artifact,
+)
 from src.const import EVOTUNE_SERVICE_NAME, EVOTUNE_BUCKET_NAME, EVOTUNE_STAGE_ID
+
 
 def publishCompletedJobStatusToMQ(jobId, filePath):
     message = JobStatusEventMessage(
@@ -16,6 +22,7 @@ def publishCompletedJobStatusToMQ(jobId, filePath):
         ),
     )
     publishJobStatusEvent(message)
+
 
 def publishFailedJobStatusToMQ(job_id, filePath, error):
     message = JobStatusEventMessage(

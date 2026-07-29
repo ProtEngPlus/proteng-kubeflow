@@ -3,6 +3,7 @@ import sys
 import os
 import asyncio
 import json
+
 sys.path.append("../../")
 
 import aio_pika
@@ -14,6 +15,7 @@ load_dotenv()
 from src.model.model import RequestMMseqs2Body
 from src.service.run_mmseqs2 import runMMseqs2Thread
 from pkg.common.logger import getLogger
+
 
 async def handle_message(body, logger):
     logger.info("[x] Messaged Received")
@@ -29,13 +31,13 @@ async def handle_message(body, logger):
         del mmseqs2Param.random_state
 
         mmseqs2Thread = threading.Thread(
-            target=runMMseqs2Thread, args=(mmseqs2Param, jobId, queryResultId, randomState)
+            target=runMMseqs2Thread,
+            args=(mmseqs2Param, jobId, queryResultId, randomState),
         )
         mmseqs2Thread.start()
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-
 
 
 async def main(loop):
@@ -50,24 +52,27 @@ async def main(loop):
     except Exception as e:
         logger.fatal(f"Error connecting to RabbitMQ: {e}")
         return
-    
+
     async with connection:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
-        
-        exchange = await channel.declare_exchange("logs_topic", aio_pika.ExchangeType.TOPIC)
+
+        exchange = await channel.declare_exchange(
+            "logs_topic", aio_pika.ExchangeType.TOPIC
+        )
 
         queue = await channel.declare_queue("mmseqs2_queue", exclusive=True)
         await queue.bind(exchange, routing_key=binding_key)
-        
+
         logger.info("Consuming messages")
-        
+
         async for message in queue:
             try:
                 async with message.process():
                     await handle_message(message.body.decode(), logger)
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
+
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

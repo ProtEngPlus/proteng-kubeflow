@@ -8,26 +8,33 @@ if not os.getenv("DEBUG") == "true":
 
 # silience the evotune logger
 import jax_unirep.evotuning as evotunelib
+
+
 def _silent_evotuning_log():
     if evotunelib.logger.hasHandlers():
         evotunelib.logger.handlers.clear()
     evotunelib.logger.setLevel(logging.ERROR)
     evotunelib.logger.propagate = False
 
+
 evotunelib.setup_evotuning_log = _silent_evotuning_log
 
 # silence optuna logger
 import optuna.logging as optunalog
+
+
 def _silent_optuna_get_logger(__name__):
     optunalogger = protenglog.getLogger(__name__)
     optunalogger.setLevel(logging.ERROR)
     optunalogger.propagate = False
+
 
 optunalog.get_logger = _silent_optuna_get_logger
 
 from jax.random import PRNGKey
 from jax_unirep import evotune
 from jax_unirep.evotuning_models import mlstm64
+
 
 def trainUnirep(trainSet, outDomainValSet, config):
     init_fun, apply_fun = mlstm64()
@@ -43,7 +50,13 @@ def trainUnirep(trainSet, outDomainValSet, config):
         out_dom_seqs=outDomainValSet,
         n_trials=config.n_trials,
         n_splits=config.n_splits,
-        n_epochs_config={"low": config.n_epochs_config_low, "high": config.n_epochs_config_high},
-        learning_rate_config= {"low": config.learning_rate_config_low, "high": config.learning_rate_config_high}
+        n_epochs_config={
+            "low": config.n_epochs_config_low,
+            "high": config.n_epochs_config_high,
+        },
+        learning_rate_config={
+            "low": config.learning_rate_config_low,
+            "high": config.learning_rate_config_high,
+        },
     )
     return study, evotuned_params

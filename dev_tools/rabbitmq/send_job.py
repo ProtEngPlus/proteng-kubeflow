@@ -1,8 +1,11 @@
 import pika
 import json
 
+
 def main():
-    connection = pika.BlockingConnection(pika.URLParameters("amqp://admin:pass@localhost:5672/"))
+    connection = pika.BlockingConnection(
+        pika.URLParameters("amqp://admin:pass@localhost:5672/")
+    )
     channel = connection.channel()
 
     # edit queue name here
@@ -26,15 +29,10 @@ def main():
             "expect": 10.0,
             "hitlist_size": 10000,
             "perc_ident": 50,
-            "hsp_cov" : 99,
-            "random_state": 2023
+            "hsp_cov": 99,
+            "random_state": 2023,
         },
-        "meta": [
-            "blast",
-            "unirep",
-            "ridgecv",
-            "mutation"
-        ]
+        "meta": ["blast", "unirep", "ridgecv", "mutation"],
     }
 
     message = json.dumps(message)
@@ -47,6 +45,7 @@ def main():
     print(f"[x] Sent '{message}'")
 
     connection.close()
+
 
 if __name__ == "__main__":
     main()
