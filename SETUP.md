@@ -20,12 +20,14 @@
    ```
    Done when: `docker ps` shows the container healthy/running.
 
-3. **Run a microservice**
+3. **Run a microservice** — use `consumer.py` (the RabbitMQ-consumer entrypoint, currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up):
    ```sh
    cd projects/<project-name>
-   python3 <entrypoint>.py
+   python3 consumer.py
    ```
-   e.g. `cd projects/blast && python3 microservice.py`. Done when: process starts and connects to RabbitMQ without erroring.
+   e.g. `cd projects/blast && python3 consumer.py`. Done when: process starts and connects to RabbitMQ without erroring. No HTTP port — it's a plain consumer, not a server.
+
+   Each microservice you want running is its own blocking process (own terminal), same as the Go services — but you only need the one(s) relevant to what you're testing, not all 6 at once.
 
 ## Format
 
