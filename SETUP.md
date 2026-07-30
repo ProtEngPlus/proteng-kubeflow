@@ -2,32 +2,46 @@
 
 ## Run locally
 
-1. **Create a `.env` file** inside the microservice's project folder (e.g. `projects/blast/.env`) — **never commit real GCP service-account credentials to any tracked file** (a previous copy of this README leaked a live key — flag to a maintainer if not already rotated):
-   ```
-   PROJECT_ID=
-   PRIVATE_KEY_ID=
-   PRIVATE_KEY=
-   CLIENT_EMAIL=
-   CLIENT_ID=
-   TOKEN_URI=https://oauth2.googleapis.com/token
-   RABBITMQ_URL=amqp://<user>:<pass>@rabbitmq:5672/
-   ```
-   Get real values from a maintainer via a secret manager or private channel — not Notion/README/git. Done when: `.env` exists with real values.
+Each of the 6 microservices under `projects/` (`blast`, `evotune`, `evotune_ESM`, `fittop`, `mmseqs2`, `mutation`) is set up the same way, but every one of them has its own venv and its own quirks — see the table below before you start.
 
-2. **Run RabbitMQ locally**
-   ```sh
-   docker run --name rabbitmq-for-test -d -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-   ```
-   Done when: `docker ps` shows the container healthy/running.
+1. **Env file** — each project already has `.env.local`/`.env.staging` (real CloudAMQP RabbitMQ creds, dummy GCP creds — dummy is fine, GCS calls just fail at request time). `consumer.py` loads plain `.env` (not `.env.local`), so copy it:
 
-3. **Run a microservice** — use `consumer.py` (the RabbitMQ-consumer entrypoint, currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up):
    ```sh
    cd projects/<project-name>
-   python3 consumer.py
+   cp .env.local .env
    ```
-   e.g. `cd projects/blast && python3 consumer.py`. Done when: process starts and connects to RabbitMQ without erroring. No HTTP port — it's a plain consumer, not a server.
 
-   Each microservice you want running is its own blocking process (own terminal), same as the Go services — but you only need the one(s) relevant to what you're testing, not all 6 at once.
+   **Never commit real GCP service-account credentials to any tracked file**
+
+2. **Create a venv and install dependencies** — the pinned exact versions in each `requirements.txt` (`pandas==2.1.1`, `pydantic==2.5.2`, etc.) don't have prebuilt wheels for current Python and fail to build from source (needs a C/Rust compiler toolchain we don't have). Install **unpinned** instead and let pip resolve modern compatible versions:
+
+   ```sh
+   python -m venv .venv
+   source .venv/Scripts/activate   # Windows Git Bash; macOS/Linux: source .venv/bin/activate
+   sed 's/[=<>].*$//' requirements.txt > /tmp/req.txt   # strip version pins
+   pip install -r /tmp/req.txt -r ../../pkg/common/requirements.txt
+   ```
+
+   Some `requirements.txt` files are saved as UTF-16 (not plain ASCII) — if `sed`/`grep` on one errors out or produces garbage, check with `file requirements.txt` first and decode via `iconv -f UTF-16LE -t UTF-8` before piping to `sed`.
+
+   **Per-project extras** (on top of the above):
+
+   | Project                                        | Extra step needed                                                                                                                                                                                    |
+   | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `blast`                                        | none                                                                                                                                                                                                 |
+   | `mmseqs2`                                      | drop `bson` from the install — it's a legacy/unmaintained package that fails to build on modern Python, and is unnecessary anyway: `pymongo` already provides `from bson import ObjectId` on its own |
+   | `evotune`, `evotune_ESM`, `fittop`, `mutation` | also `pip install "setuptools<81"` — these use `jax-unirep`, which does `import pkg_resources` (part of setuptools); setuptools ≥81 dropped that module                                              |
+   | `evotune_ESM`                                  | heaviest install (`torch`, `transformers`, `datasets`, `optuna`) — expect several minutes                                                                                                            |
+
+3. **Run a microservice** — use `consumer.py` (the RabbitMQ-consumer entrypoint, currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up):
+
+   ```sh
+   python consumer.py
+   ```
+
+   Done when: logs show `Connecting to RabbitMQ` → `Connected to RabbitMQ` → `Consuming messages`, no crash. No HTTP port — it's a plain consumer, not a server. First run can take 20-30s before anything prints (slow `jax`/ML library import), that's normal, not a hang.
+
+   Each microservice you want running is its own blocking process (own terminal/venv), same as the Go services — but you only need the one(s) relevant to what you're testing, not all 6 at once.
 
 ## Format
 
