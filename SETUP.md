@@ -33,11 +33,13 @@ Each of the 6 microservices under `projects/` (`blast`, `evotune`, `evotune_ESM`
    | `evotune`, `evotune_ESM`, `fittop`, `mutation` | also `pip install "setuptools<81"` — these use `jax-unirep`, which does `import pkg_resources` (part of setuptools); setuptools ≥81 dropped that module                                              |
    | `evotune_ESM`                                  | heaviest install (`torch`, `transformers`, `datasets`, `optuna`) — expect several minutes                                                                                                            |
 
-3. **Run a microservice** — use `consumer.py` (the RabbitMQ-consumer entrypoint, currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up):
+3. **Run a microservice** — each project has a `run.sh` that copies `.env.local` → `.env` (first run only) and calls the venv's `python` directly, so you never have to remember to `source .venv/Scripts/activate` first:
 
    ```sh
-   python consumer.py
+   ./run.sh
    ```
+
+   (Runs `consumer.py`, the RabbitMQ-consumer entrypoint — currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up. If you'd rather run it manually: `source .venv/Scripts/activate` then `python consumer.py`.)
 
    Done when: logs show `Connecting to RabbitMQ` → `Connected to RabbitMQ` → `Consuming messages`, no crash. No HTTP port — it's a plain consumer, not a server. First run can take 20-30s before anything prints (slow `jax`/ML library import), that's normal, not a hang.
 
