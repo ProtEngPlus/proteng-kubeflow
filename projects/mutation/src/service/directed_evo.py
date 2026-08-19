@@ -1,6 +1,7 @@
+import random
+
 import numpy as np
 import pandas as pd
-import random
 from jax_unirep import get_reps
 from src.logger import mutationLogger as logger
 from src.service.utils import getIntToAa

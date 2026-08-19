@@ -1,4 +1,4 @@
-from src.model.model import RequestFitTopBody, ArtifactPath
+from src.model.model import ArtifactPath, RequestFitTopBody
 from src.service.run_top_model import doFitTop
 
 # Prepare mock artifact paths

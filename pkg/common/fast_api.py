@@ -1,6 +1,7 @@
+from collections.abc import Callable
+
 from fastapi import Request, Response
 from fastapi.routing import APIRoute
-from typing import Callable
 
 
 def GetLoggingRouteClass(logger):

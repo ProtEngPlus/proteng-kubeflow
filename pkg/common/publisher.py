@@ -1,9 +1,10 @@
+import datetime
+import logging
+import os
+from typing import Any
+
 import pika
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
-import os
-import logging
-import datetime
 
 # TODO: Create a persistent connection to RabbitMQ instead
 
@@ -24,7 +25,7 @@ def publishDefaultExchange(rabbitmq_url, queue_name, message):
 class Artifact(BaseModel):
     bucket_name: str
     path: str
-    url: Optional[str] = ""
+    url: str | None = ""
 
 
 class JobUpdateData(BaseModel):
@@ -32,11 +33,11 @@ class JobUpdateData(BaseModel):
     stage_id: int
     status: str
     artifact: Artifact
-    error: Optional[str] = ""
-    mutation_id: Optional[str] = ""
-    mutation_result: Optional[Dict[str, float]] = {}
-    query_result_id: Optional[str] = ""
-    query_result: Optional[List[Dict[str, Any]]] = []
+    error: str | None = ""
+    mutation_id: str | None = ""
+    mutation_result: dict[str, float] | None = {}
+    query_result_id: str | None = ""
+    query_result: list[dict[str, Any]] | None = []
 
 
 class JobStatusEventMessage(BaseModel):
@@ -51,14 +52,14 @@ def publishJobStatusEvent(message: JobStatusEventMessage):
 
     try:
         publishDefaultExchange(rabbitmq_url, queue_name, message.json())
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- failure is logged, not fatal
         logger.warning(f"error publishing Message: Unexpected {err=}, {type(err)=}")
 
 
 if __name__ == "__main__":
     # TEST: publishJobStatusEvent
     os.environ.update([("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")])
-    print(datetime.datetime.now().isoformat())
+    print(datetime.datetime.now(datetime.timezone.utc).isoformat())
     message = JobStatusEventMessage(
         service_name="job",
         timestamp="2021-01-01T00:00:00.000Z",

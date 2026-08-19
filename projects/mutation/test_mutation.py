@@ -1,11 +1,9 @@
 import sys
 
 sys.path.append("../../")
-from src.service.thread import runMutationThread
-from src.model.model import RequestMutationBody
-
-
 from dotenv import load_dotenv
+from src.model.model import RequestMutationBody
+from src.service.thread import runMutationThread
 
 load_dotenv()
 

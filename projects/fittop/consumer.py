@@ -1,8 +1,8 @@
-import threading
-import sys
-import os
 import asyncio
 import json
+import os
+import sys
+import threading
 
 sys.path.append("../../")
 
@@ -14,6 +14,7 @@ load_dotenv()
 
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
+
 from pkg.common.logger import getLogger
 
 
@@ -26,7 +27,7 @@ async def handle_message(body, logger):
         topModelThread = threading.Thread(target=doFitTop, args=(requestBody,))
         topModelThread.start()
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- must stay alive on bad messages
         logger.error(f"Error processing message: {e}")
 
 
@@ -39,7 +40,7 @@ async def main(loop):
         logger.info("Connecting to RabbitMQ")
         connection = await aio_pika.connect_robust(conn_url, loop=loop)
         logger.info("Connected to RabbitMQ")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- exit cleanly on connect failure
         logger.fatal(f"Error connecting to RabbitMQ: {e}")
         return
 
@@ -60,7 +61,7 @@ async def main(loop):
             try:
                 async with message.process():
                     await handle_message(message.body.decode(), logger)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- must stay alive on bad messages
                 logger.error(f"Error processing message: {e}")
 
 

@@ -1,9 +1,9 @@
+from src.logger import mutationLogger as logger
 from src.model.model import RequestMutationBody
-from src.service.db import getParamsFromDB, getModelFromDB
+from src.service.db import getModelFromDB, getParamsFromDB
 from src.service.directed_evo import runDirectedEvoTrajectories
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 from src.service.utils import convertTwoArraysToDict
-from src.logger import mutationLogger as logger
 
 
 def runMutationThread(requestBody: RequestMutationBody):
@@ -55,7 +55,7 @@ def runMutationThread(requestBody: RequestMutationBody):
         logger.debug("Success message sent!")
 
         logger.info(f"job id {requestBody.job_id}: Mutation Thread finished")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {requestBody.job_id}: error mutation: Unexpected {err=}, {type(err)=}"
         )

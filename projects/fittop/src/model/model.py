@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Dict
 
 
 class FitTopParams(BaseModel):
@@ -27,6 +26,6 @@ class RequestFitTopBody(BaseModel):
     job_id: str
     input: str
     config: FitTopParams
-    artifact: Dict[str, ArtifactPath]
+    artifact: dict[str, ArtifactPath]
     lab_result: LabResult
     meta: list[str]

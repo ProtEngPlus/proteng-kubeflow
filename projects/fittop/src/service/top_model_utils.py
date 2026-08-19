@@ -1,10 +1,12 @@
+import pickle as pkl
+
 import numpy as np
 import pandas as pd
 from jax_unirep import get_reps
-from pkg.common.db import downloadFromBucket
-from sklearn.model_selection import KFold
 from sklearn.linear_model import RidgeCV
-import pickle as pkl
+from sklearn.model_selection import KFold
+
+from pkg.common.db import downloadFromBucket
 
 
 def formatData(amount, sequences, scores):

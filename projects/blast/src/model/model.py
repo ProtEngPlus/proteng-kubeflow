@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
 
 NCBI_BLAST_URL = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
 
@@ -7,57 +6,57 @@ NCBI_BLAST_URL = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
 class BlastParams(BaseModel):
     program: str
     database: str
-    sequence: Optional[str] = ""
-    url_base: Optional[str] = NCBI_BLAST_URL
-    auto_format: Optional[bool] = None
-    composition_based_statistics: Optional[str] = None
-    db_genetic_code: Optional[int] = None
-    endpoints: Optional[int] = None
-    entrez_query: Optional[str] = "(none)"
-    expect: Optional[float] = 10.0
-    filter: Optional[str] = None
-    gapcosts: Optional[str] = None
-    genetic_code: Optional[int] = None
-    hitlist_size: Optional[int] = 50
-    i_thresh: Optional[float] = None
-    layout: Optional[str] = None
-    lcase_mask: Optional[int] = None
-    matrix_name: Optional[str] = None
-    nucl_penalty: Optional[int] = None
-    nucl_reward: Optional[int] = None
-    other_advanced: Optional[str] = None
-    perc_ident: Optional[int] = None
-    phi_pattern: Optional[str] = None
-    query_file: Optional[str] = None
-    query_believe_defline: Optional[bool] = None
-    query_from: Optional[int] = None
-    query_to: Optional[int] = None
-    searchsp_eff: Optional[str] = None
-    service: Optional[str] = None
-    threshold: Optional[int] = None
-    ungapped_alignment: Optional[bool] = None
-    word_size: Optional[int] = None
-    short_query: Optional[int] = None
-    alignments: Optional[int] = 500
-    alignment_view: Optional[str] = None
-    descriptions: Optional[int] = 500
-    entrez_links_new_window: Optional[bool] = None
-    expect_low: Optional[float] = None
-    expect_high: Optional[float] = None
-    format_entrez_query: Optional[str] = None
-    format_object: Optional[str] = None
-    format_type: Optional[str] = "XML"
-    ncbi_gi: Optional[bool] = None
-    results_file: Optional[str] = None
-    show_overview: Optional[bool] = None
-    megablast: Optional[bool] = None
-    template_type: Optional[str] = None
-    template_length: Optional[int] = None
-    username: Optional[str] = "blast"
-    password: Optional[str] = None
-    hsp_cov: Optional[int] = 0
-    random_state: Optional[int] = 2023
-    seq_length: Optional[int] = (100,)
+    sequence: str | None = ""
+    url_base: str | None = NCBI_BLAST_URL
+    auto_format: bool | None = None
+    composition_based_statistics: str | None = None
+    db_genetic_code: int | None = None
+    endpoints: int | None = None
+    entrez_query: str | None = "(none)"
+    expect: float | None = 10.0
+    filter: str | None = None
+    gapcosts: str | None = None
+    genetic_code: int | None = None
+    hitlist_size: int | None = 50
+    i_thresh: float | None = None
+    layout: str | None = None
+    lcase_mask: int | None = None
+    matrix_name: str | None = None
+    nucl_penalty: int | None = None
+    nucl_reward: int | None = None
+    other_advanced: str | None = None
+    perc_ident: int | None = None
+    phi_pattern: str | None = None
+    query_file: str | None = None
+    query_believe_defline: bool | None = None
+    query_from: int | None = None
+    query_to: int | None = None
+    searchsp_eff: str | None = None
+    service: str | None = None
+    threshold: int | None = None
+    ungapped_alignment: bool | None = None
+    word_size: int | None = None
+    short_query: int | None = None
+    alignments: int | None = 500
+    alignment_view: str | None = None
+    descriptions: int | None = 500
+    entrez_links_new_window: bool | None = None
+    expect_low: float | None = None
+    expect_high: float | None = None
+    format_entrez_query: str | None = None
+    format_object: str | None = None
+    format_type: str | None = "XML"
+    ncbi_gi: bool | None = None
+    results_file: str | None = None
+    show_overview: bool | None = None
+    megablast: bool | None = None
+    template_type: str | None = None
+    template_length: int | None = None
+    username: str | None = "blast"
+    password: str | None = None
+    hsp_cov: int | None = 0
+    random_state: int | None = 2023
+    seq_length: int | None = (100,)
 
 
 class RequestBlastBody(BaseModel):

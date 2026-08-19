@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 print(sys.path)
 
@@ -14,11 +14,12 @@ if pkg_path not in sys.path:
 
 
 import logging
+
 import common.logger as protenglog
 import pandas as pd
 
 # silence TQDM
-if not os.getenv("DEBUG") == "true":
+if os.getenv("DEBUG") != "true":
     os.environ["TQDM_DISABLE"] = "1"
 
 # silence optuna logger
@@ -33,15 +34,19 @@ def _silent_optuna_get_logger(__name__):
 
 optunalog.get_logger = _silent_optuna_get_logger
 
-import torch
-from transformers import AutoTokenizer
-from datasets import Dataset
-from transformers import AutoModelForMaskedLM
-from transformers import DataCollatorForLanguageModeling
-from transformers import TrainingArguments, Trainer
-import tempfile
-from torch import nn
 import re
+import tempfile
+
+import torch
+from datasets import Dataset
+from torch import nn
+from transformers import (
+    AutoModelForMaskedLM,
+    AutoTokenizer,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
+)
 
 
 def get_latest_checkpoint_by_number(checkpoint_dir):

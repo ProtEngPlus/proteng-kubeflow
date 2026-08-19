@@ -5,17 +5,18 @@ warnings.filterwarnings("ignore")
 
 # https://github.com/ElArkk/jax-unirep/blob/e3d756011fd539c803c669495b5c20357c47f661/jax_unirep/utils.py#L56
 
+from src.const import FITTOP_BUCKET_NAME, FITTOP_SERVICE_NAME, FITTOP_STAGE_ID
+from src.logger import fittopLogger as logger
+from src.model.model import RequestFitTopBody
+from src.service.top_model_utils import (
+    doRidgeRegression,
+    formatData,
+    loadESMseqs,
+    loadSeqs,
+)
+
 from pkg.common.db import uploadToBucket
 from pkg.common.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
-from src.logger import fittopLogger as logger
-from src.const import FITTOP_SERVICE_NAME, FITTOP_BUCKET_NAME, FITTOP_STAGE_ID
-from src.service.top_model_utils import (
-    formatData,
-    loadSeqs,
-    doRidgeRegression,
-    loadESMseqs,
-)
-from src.model.model import RequestFitTopBody
 
 
 def doFitTop(requestBody: RequestFitTopBody):
@@ -67,7 +68,7 @@ def doFitTop(requestBody: RequestFitTopBody):
             requestBody.job_id + ".pkl",
         )
         logger.info(f"job id {requestBody.job_id} completed successfully")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {requestBody.job_id}: error do fittop: Unexpected {err=}, {type(err)=}"
         )

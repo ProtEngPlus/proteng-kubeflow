@@ -8,16 +8,14 @@
 
 
 import pickle as pkl
-import pandas as pd
-from src.model.model import RequestEvotuneESMBody
-
-from src.logger import evotuneESMLogger as logger
-
-from src.service.db import getSequencesFromDB, uploadESMToDB
-from src.service.train import trainESM
-from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
-
 import warnings
+
+import pandas as pd
+from src.logger import evotuneESMLogger as logger
+from src.model.model import RequestEvotuneESMBody
+from src.service.db import getSequencesFromDB, uploadESMToDB
+from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
+from src.service.train import trainESM
 
 warnings.filterwarnings("ignore")
 
@@ -86,7 +84,7 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
         logger.debug("Success message sent!")
 
         logger.info(f"job id {requestBody.job_id}: Evotune Thread finished")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {requestBody.job_id}: error evotune: Unexpected {err=}, {type(err)=}"
         )

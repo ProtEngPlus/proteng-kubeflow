@@ -1,7 +1,9 @@
 import json
-from pkg.common.db import downloadFromBucket, uploadToBucket
-from src.model.model import RequestEvotuneBody
+
 from src.const import EVOTUNE_BUCKET_NAME
+from src.model.model import RequestEvotuneBody
+
+from pkg.common.db import downloadFromBucket, uploadToBucket
 
 
 def getSequencesFromDB(requestBody: RequestEvotuneBody):

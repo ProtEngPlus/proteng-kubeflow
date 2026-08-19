@@ -45,4 +45,8 @@ This repo uses [pre-commit](https://pre-commit.com/) (see [SETUP.md](./SETUP.md)
 - **pre-commit / pre-push**: `black` (format) + `ruff --fix` (lint) on staged Python files
 - **commit-msg**: rejects commit messages that don't follow the Conventional Commits format above
 
+`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push — skipping hooks locally (`--no-verify`) just means CI catches it instead.
+
+`ruff`'s enabled rule set (see [ruff.toml](./ruff.toml) for the ignore list) goes beyond formatting — it also flags things like blind `except Exception:`, naive (non-tz-aware) `datetime.now()`, and needless raise/except patterns. These need actual judgment per call site, not blind autofix — `ruff check --fix .` won't touch them.
+
 Run everything manually: `pre-commit run --all-files`

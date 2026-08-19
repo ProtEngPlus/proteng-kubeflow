@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter
+import sys
+import threading
+
+from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-import threading
-import sys
 
 sys.path.append("../../")
 
@@ -13,8 +14,8 @@ load_dotenv()
 from src.model.model import RequestFitTopBody
 from src.service.run_top_model import doFitTop
 
-from pkg.common.logger import getLogger
 from pkg.common.fast_api import GetLoggingRouteClass
+from pkg.common.logger import getLogger
 
 app = FastAPI()
 router = APIRouter(route_class=GetLoggingRouteClass(getLogger("FastAPI")))
@@ -27,14 +28,11 @@ def http_exception_handler(req, e):
 
 @router.post("/top-model")
 def requestTopModel(requestBody: RequestFitTopBody):
-    try:
-        # Create and start the BLAST thread
-        topModelThread = threading.Thread(target=doFitTop, args=(requestBody,))
-        topModelThread.start()
+    # Create and start the BLAST thread
+    topModelThread = threading.Thread(target=doFitTop, args=(requestBody,))
+    topModelThread.start()
 
-        return {"code": 200, "message": "started fittop thread"}
-    except Exception as e:
-        raise e
+    return {"code": 200, "message": "started fittop thread"}
 
 
 app.include_router(router)

@@ -1,12 +1,13 @@
 import datetime
 
+from src.const import MUTATION_SERVICE_NAME, MUTATION_STAGE_ID
+
 from pkg.common.publisher import (
-    publishJobStatusEvent,
+    Artifact,
     JobStatusEventMessage,
     JobUpdateData,
-    Artifact,
+    publishJobStatusEvent,
 )
-from src.const import MUTATION_SERVICE_NAME, MUTATION_STAGE_ID
 
 
 def publishCompletedJobStatusToMQ(
@@ -16,7 +17,7 @@ def publishCompletedJobStatusToMQ(
 ):
     message = JobStatusEventMessage(
         service_name=MUTATION_SERVICE_NAME,
-        timestamp=datetime.datetime.now().isoformat(),
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         data=JobUpdateData(
             job_id=jobId,
             mutation_id=mutationId,
@@ -33,7 +34,7 @@ def publishCompletedJobStatusToMQ(
 def publishFailedJobStatusToMQ(job_id, mutationId, filePath, error):
     message = JobStatusEventMessage(
         service_name=MUTATION_SERVICE_NAME,
-        timestamp=datetime.datetime.now().isoformat(),
+        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         data=JobUpdateData(
             job_id=job_id,
             mutation_id=mutationId,

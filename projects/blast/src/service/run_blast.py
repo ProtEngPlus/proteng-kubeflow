@@ -1,13 +1,15 @@
-from Bio.Blast import NCBIWWW
-import re
-import pandas as pd
-import json
-from pkg.common.db import uploadToBucket
-from pkg.common.publisher import *
 import datetime
+import json
+import re
+
+import pandas as pd
+from Bio.Blast import NCBIWWW
+from bson import ObjectId
 from src.logger import blastLogger as logger
 from src.model.model import BlastParams
-from bson import ObjectId
+
+from pkg.common.db import uploadToBucket
+from pkg.common.publisher import *
 
 
 def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
@@ -115,7 +117,7 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
             logger.error(f"job id {jobId}: error run blast: No sequence found")
             message = JobStatusEventMessage(
                 service_name="blast-microservice",
-                timestamp=datetime.datetime.now().isoformat(),
+                timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 data=JobUpdateData(
                     job_id=jobId,
                     stage_id=0,
@@ -130,7 +132,7 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
 
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=datetime.datetime.now().isoformat(),
+            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,
@@ -142,13 +144,13 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         )
         publishJobStatusEvent(message)
         logger.info(f"Job {jobId} completed successfully")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {jobId}: error run blast: Unexpected {err=}, {type(err)=}"
         )
         message = JobStatusEventMessage(
             service_name="blast-microservice",
-            timestamp=datetime.datetime.now().isoformat(),
+            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,

@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
 class EvotuneParams(BaseModel):
@@ -34,8 +33,8 @@ class ArtifactPath(BaseModel):
 
 
 class ArtifactMap(BaseModel):
-    blast: Optional[ArtifactPath] = None
-    mmseqs2: Optional[ArtifactPath] = None
+    blast: ArtifactPath | None = None
+    mmseqs2: ArtifactPath | None = None
 
 
 class RequestEvotuneBody(BaseModel):

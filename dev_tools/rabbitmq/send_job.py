@@ -1,5 +1,6 @@
-import pika
 import json
+
+import pika
 
 
 def main():

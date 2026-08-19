@@ -1,14 +1,16 @@
+import datetime
+import json
 import re
+import subprocess
+
 import numpy as np
 import pandas as pd
-import json
-from pkg.common.db import uploadToBucket
-from pkg.common.publisher import *
-import datetime
+from bson import ObjectId
 from src.logger import mmseqs2Logger as logger
 from src.model.model import MMseqs2Params
-from bson import ObjectId
-import subprocess
+
+from pkg.common.db import uploadToBucket
+from pkg.common.publisher import *
 
 
 def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomState):
@@ -59,13 +61,13 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             "-c",
             str(mmseqs2Params.c / 100),
         ]
-        raw_result = subprocess.run(cmd, capture_output=True, text=True)
+        raw_result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
         if raw_result.returncode != 0 or not os.path.exists(RESULT_FILE):
             logger.error(f"job id {jobId}: error run mmseqs2: No result from mmseqs2")
             message = JobStatusEventMessage(
                 service_name="mmseqs2-microservice",
-                timestamp=datetime.datetime.now().isoformat(),
+                timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 data=JobUpdateData(
                     job_id=jobId,
                     stage_id=0,
@@ -161,7 +163,7 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             logger.error(f"job id {jobId}: error run mmseqs2: No sequence found")
             message = JobStatusEventMessage(
                 service_name="mmseqs2-microservice",
-                timestamp=datetime.datetime.now().isoformat(),
+                timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 data=JobUpdateData(
                     job_id=jobId,
                     stage_id=0,
@@ -176,7 +178,7 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
 
         message = JobStatusEventMessage(
             service_name="mmseqs2-microservice",
-            timestamp=datetime.datetime.now().isoformat(),
+            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,
@@ -188,13 +190,13 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
         )
         publishJobStatusEvent(message)
         logger.info(f"Job {jobId} completed successfully")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {jobId}: error run mmseqs2: Unexpected {err=}, {type(err)=}"
         )
         message = JobStatusEventMessage(
             service_name="mmseqs2-microservice",
-            timestamp=datetime.datetime.now().isoformat(),
+            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             data=JobUpdateData(
                 job_id=jobId,
                 stage_id=0,

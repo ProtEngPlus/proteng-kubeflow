@@ -1,8 +1,8 @@
-from fastapi import FastAPI, APIRouter
+import sys
+
+from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-
-import sys
 
 sys.path.append("../../")
 
@@ -12,8 +12,9 @@ load_dotenv()
 
 import threading
 
-from src.model.model import RequestMMseqs2Body, MMseqs2Params
+from src.model.model import MMseqs2Params, RequestMMseqs2Body
 from src.service.run_mmseqs2 import runMMseqs2Thread
+
 from pkg.common.fast_api import GetLoggingRouteClass
 from pkg.common.logger import getLogger
 
@@ -39,16 +40,13 @@ async def run_mmseqs2(requestBody: RequestMMseqs2Body):
     jobId = requestBody.job_id
     randomState = requestBody.config.random_state
     del mmseqs2Params.random_state
-    try:
-        # Create and start the MMseqs2 thread using the function from the imported module
-        mmseqs2Thread = threading.Thread(
-            target=runMMseqs2Thread, args=(mmseqs2Params, jobId, randomState)
-        )
-        mmseqs2Thread.start()
+    # Create and start the MMseqs2 thread using the function from the imported module
+    mmseqs2Thread = threading.Thread(
+        target=runMMseqs2Thread, args=(mmseqs2Params, jobId, randomState)
+    )
+    mmseqs2Thread.start()
 
-        return {"code": 200, "message": "started mmseqs2 thread"}
-    except Exception as e:
-        raise e
+    return {"code": 200, "message": "started mmseqs2 thread"}
 
 
 app.include_router(router)

@@ -1,9 +1,10 @@
-import os
 import logging
+import os
+
 import pkg.common.logger as protenglog
 
 # silence TQDM
-if not os.getenv("DEBUG") == "true":
+if os.getenv("DEBUG") != "true":
     os.environ["TQDM_DISABLE"] = "1"
 
 # silience the evotune logger

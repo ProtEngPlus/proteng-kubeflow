@@ -1,14 +1,12 @@
 import pickle as pkl
-import pandas as pd
-from src.model.model import RequestEvotuneBody
-
-from src.logger import evotuneLogger as logger
-
-from src.service.db import getSequencesFromDB, uploadEUnirepToDB
-from src.service.train import trainUnirep
-from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
-
 import warnings
+
+import pandas as pd
+from src.logger import evotuneLogger as logger
+from src.model.model import RequestEvotuneBody
+from src.service.db import getSequencesFromDB, uploadEUnirepToDB
+from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
+from src.service.train import trainUnirep
 
 warnings.filterwarnings("ignore")
 
@@ -76,7 +74,7 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         logger.debug("Success message sent!")
 
         logger.info(f"job id {requestBody.job_id}: Evotune Thread finished")
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001 -- reports failure via job-status queue
         logger.error(
             f"job id {requestBody.job_id}: error evotune: Unexpected {err=}, {type(err)=}"
         )
