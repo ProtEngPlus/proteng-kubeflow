@@ -5,6 +5,7 @@
 !.env.example
 __pycache__/
 env/
+.venv/
 .vscode/
 blast_result*
 tmp/
