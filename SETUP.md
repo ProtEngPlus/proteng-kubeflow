@@ -61,6 +61,8 @@ black .
 ruff check --fix .
 ```
 
+`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push.
+
 ## Pre-commit hooks
 
 Format + lint above run automatically via [pre-commit](https://pre-commit.com/) on both `git commit` and `git push`. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
