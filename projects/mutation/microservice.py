@@ -25,6 +25,11 @@ def http_exception_handler(req, e):
     return JSONResponse({"code": 500, "error": str(e)}, 500)
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.post("/mutation")
 def requestEvotune(requestBody: RequestMutationBody):
     logger.debug("----------------------------------------------------------")

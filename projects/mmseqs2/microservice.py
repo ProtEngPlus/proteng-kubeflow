@@ -32,6 +32,11 @@ async def root():
     return {"message": "Hello World"}
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.post("/mmseqs2")
 async def run_mmseqs2(requestBody: RequestMMseqs2Body):
     # Extract parameters from the request body

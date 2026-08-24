@@ -32,6 +32,11 @@ async def root():
     return {"message": "Hello World"}
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.post("/blast")
 async def run_blast(requestBody: RequestBlastBody):
     # Extract parameters from the request body

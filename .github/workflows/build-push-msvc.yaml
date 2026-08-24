@@ -1,6 +1,8 @@
 name: build-push microservice (REST)
 
 on:
+  push:
+    branches: [main, dev]
   workflow_dispatch:
     inputs:
         auto_deploy:
@@ -65,7 +67,7 @@ jobs:
         echo "SHORT_SHA=${SHORT_SHA}" >> ${GITHUB_ENV}
         
     - name: Build and push blast service
-      if: ${{ inputs.blast == true }}
+      if: ${{ github.event_name == 'push' || inputs.blast == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -76,7 +78,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Build and push mmseqs2 service
-      if: ${{ inputs.mmseqs2 == true }}
+      if: ${{ github.event_name == 'push' || inputs.mmseqs2 == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -87,7 +89,7 @@ jobs:
         cache-to: type=gha,mode=max
     
     - name: Build and push evotune service
-      if: ${{ inputs.evotune == true }}
+      if: ${{ github.event_name == 'push' || inputs.evotune == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -98,7 +100,7 @@ jobs:
         cache-to: type=gha,mode=max
     
     - name: Build and push fittop service
-      if: ${{ inputs.fittop == true }}
+      if: ${{ github.event_name == 'push' || inputs.fittop == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -109,7 +111,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Build and push mutation service
-      if: ${{ inputs.mutation == true }}
+      if: ${{ github.event_name == 'push' || inputs.mutation == true }}
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -123,7 +125,7 @@ jobs:
     name: Auto Deploy
     runs-on: ubuntu-latest
     needs: build-push
-    if: ${{ github.event.inputs.auto_deploy }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.auto_deploy == 'true' }}
     permissions:
       contents: read
       packages: write
@@ -141,11 +143,11 @@ jobs:
           export EVOTUNE_IMAGE=
           export FITTOP_IMAGE=
           export MUTATION_IMAGE=
-          if [[ ${{ github.event.inputs.blast }} == true ]]; then export BLAST_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-blast; fi
-          if [[ ${{ github.event.inputs.mmseqs2 }} == true ]]; then export MMSEQS2_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2; fi
-          if [[ ${{ github.event.inputs.evotune }} == true ]]; then export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune; fi
-          if [[ ${{ github.event.inputs.fittop }} == true ]]; then export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop; fi
-          if [[ ${{ github.event.inputs.mutation }} == true ]]; then export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation; fi
+          if [[ "${{ github.event_name }}" == "push" || ${{ github.event.inputs.blast }} == true ]]; then export BLAST_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-blast; fi
+          if [[ "${{ github.event_name }}" == "push" || ${{ github.event.inputs.mmseqs2 }} == true ]]; then export MMSEQS2_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2; fi
+          if [[ "${{ github.event_name }}" == "push" || ${{ github.event.inputs.evotune }} == true ]]; then export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune; fi
+          if [[ "${{ github.event_name }}" == "push" || ${{ github.event.inputs.fittop }} == true ]]; then export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop; fi
+          if [[ "${{ github.event_name }}" == "push" || ${{ github.event.inputs.mutation }} == true ]]; then export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation; fi
           export IMAGE_LIST=$(python3 -c 'import os; print(",".join([e for e in [os.environ["BLAST_IMAGE"], os.environ["MMSEQS2_IMAGE"], os.environ["EVOTUNE_IMAGE"], os.environ["FITTOP_IMAGE"], os.environ["MUTATION_IMAGE"]] if e != ""]))')
           echo $IMAGE_LIST
           echo "IMAGE_LIST=${IMAGE_LIST}" >> ${GITHUB_ENV}
@@ -158,4 +160,4 @@ jobs:
           github_token: ${{ secrets.ACTIONS_AUTH_TOKEN }}
           github_user: protenger
           workflow_file_name: update_tag_multiple.yaml
-          client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.IMAGE_TAG, env.IMAGE_LIST) }}
+          client_payload: ${{ format('{{"path":"{0}","tag":"{1}","images":"{2}"}}', github.ref_name == 'main' && 'k8s/apps/ml-pipeline/overlays/production/kustomization.yaml' || 'k8s/apps/ml-pipeline/overlays/dev/kustomization.yaml', env.IMAGE_TAG, env.IMAGE_LIST) }}

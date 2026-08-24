@@ -26,6 +26,11 @@ def http_exception_handler(req, e):
     return JSONResponse({"code": 500, "error": str(e)}, 500)
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.post("/top-model")
 def requestTopModel(requestBody: RequestFitTopBody):
     # Create and start the BLAST thread
