@@ -110,7 +110,7 @@ jobs:
         context: .
         file: ./projects/blast/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-blast:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-blast-rest:fastapi-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -121,7 +121,7 @@ jobs:
         context: .
         file: ./projects/mmseqs2/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2-rest:fastapi-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -132,7 +132,7 @@ jobs:
         context: .
         file: ./projects/evotune/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-evotune:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-evotune-rest:fastapi-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -143,7 +143,7 @@ jobs:
         context: .
         file: ./projects/fittop/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-fittop:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-fittop-rest:fastapi-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -154,7 +154,7 @@ jobs:
         context: .
         file: ./projects/mutation/docker/microservice.Dockerfile
         push: true
-        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mutation:fastapi-${{ env.SHORT_SHA }}
+        tags: ${{ secrets.IMAGE_REPO }}/${{ secrets.REGISTRY_USERNAME }}/ml-mutation-rest:fastapi-${{ env.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -162,7 +162,14 @@ jobs:
     name: Auto Deploy
     runs-on: ubuntu-latest
     needs: [build-push, changes]
-    if: ${{ github.event.inputs.auto_deploy == 'true' }}
+    if: >-
+      github.event.inputs.auto_deploy == 'true' ||
+      (github.event_name == 'push' && (
+        needs.changes.outputs.blast == 'true' ||
+        needs.changes.outputs.mmseqs2 == 'true' ||
+        needs.changes.outputs.evotune == 'true' ||
+        needs.changes.outputs.fittop == 'true' ||
+        needs.changes.outputs.mutation == 'true'))
     permissions:
       contents: read
       packages: write
@@ -180,11 +187,11 @@ jobs:
           export EVOTUNE_IMAGE=
           export FITTOP_IMAGE=
           export MUTATION_IMAGE=
-          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.blast }}" == "true" ) || "${{ github.event.inputs.blast }}" == "true" ]]; then export BLAST_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-blast; fi
-          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.mmseqs2 }}" == "true" ) || "${{ github.event.inputs.mmseqs2 }}" == "true" ]]; then export MMSEQS2_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2; fi
-          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.evotune }}" == "true" ) || "${{ github.event.inputs.evotune }}" == "true" ]]; then export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune; fi
-          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.fittop }}" == "true" ) || "${{ github.event.inputs.fittop }}" == "true" ]]; then export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop; fi
-          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.mutation }}" == "true" ) || "${{ github.event.inputs.mutation }}" == "true" ]]; then export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation; fi
+          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.blast }}" == "true" ) || "${{ github.event.inputs.blast }}" == "true" ]]; then export BLAST_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-blast-rest; fi
+          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.mmseqs2 }}" == "true" ) || "${{ github.event.inputs.mmseqs2 }}" == "true" ]]; then export MMSEQS2_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mmseqs2-rest; fi
+          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.evotune }}" == "true" ) || "${{ github.event.inputs.evotune }}" == "true" ]]; then export EVOTUNE_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-evotune-rest; fi
+          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.fittop }}" == "true" ) || "${{ github.event.inputs.fittop }}" == "true" ]]; then export FITTOP_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-fittop-rest; fi
+          if [[ ( "${{ github.event_name }}" == "push" && "${{ needs.changes.outputs.mutation }}" == "true" ) || "${{ github.event.inputs.mutation }}" == "true" ]]; then export MUTATION_IMAGE=${{ secrets.REGISTRY_USERNAME }}/ml-mutation-rest; fi
           export IMAGE_LIST=$(python3 -c 'import os; print(",".join([e for e in [os.environ["BLAST_IMAGE"], os.environ["MMSEQS2_IMAGE"], os.environ["EVOTUNE_IMAGE"], os.environ["FITTOP_IMAGE"], os.environ["MUTATION_IMAGE"]] if e != ""]))')
           echo $IMAGE_LIST
           echo "IMAGE_LIST=${IMAGE_LIST}" >> ${GITHUB_ENV}
