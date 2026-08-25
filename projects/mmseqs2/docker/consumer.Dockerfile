@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     libssl-dev \
     python3-dev \
+    procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
