@@ -2,6 +2,8 @@ fastapi==0.110.0
 pydantic==2.5.2
 uvicorn>=0.15.0,<0.16.0
 jax-unirep==2.2.0
+jax==0.6.0
+jaxlib==0.6.0
 pandas==2.1.1
 gcloud-aio-storage==9.0.0
 aiofile==3.8.8
