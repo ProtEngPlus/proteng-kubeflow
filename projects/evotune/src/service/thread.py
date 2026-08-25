@@ -30,17 +30,21 @@ def runEvotuneThread(requestBody: RequestEvotuneBody):
         logger.info("Sequences got!")
 
         # move from protein query
+        # frac=0.1 rounds down to 0 rows whenever there are fewer than ~10
+        # sequences, leaving jax_unirep with an empty validation set - always
+        # take at least 1 sequence for the held-out set.
+        valSetSize = max(1, round(len(filtered_df) * 0.1))
         if filtered_df["score"].sum() == 0:
             logger.warning(
                 "The 'score' column has all zero values. Falling back to simple random sampling."
             )
             # Use simple random sampling without weights
-            outDomainValSet = filtered_df.sample(frac=0.1, random_state=randomState)
+            outDomainValSet = filtered_df.sample(n=valSetSize, random_state=randomState)
             trainSet = filtered_df.drop(outDomainValSet.index)
         else:
             # Perform weighted sampling
             outDomainValSet = filtered_df.sample(
-                frac=0.1, weights="score", random_state=randomState
+                n=valSetSize, weights="score", random_state=randomState
             )
             trainSet = filtered_df.drop(outDomainValSet.index)
 
