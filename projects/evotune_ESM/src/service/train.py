@@ -3,9 +3,7 @@ import sys
 
 print(sys.path)
 
-# Add the root directory (proteng-kubeflow) to sys.path
-# Add the proteng-kubeflow root directory to sys.path
-pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../pkg"))
+pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pkg"))
 if pkg_path not in sys.path:
     sys.path.insert(0, pkg_path)
 
@@ -117,9 +115,8 @@ def trainESM(trainSet, outDomainValSet, config):
     temp_dir = tempfile.TemporaryDirectory()
     training_args = TrainingArguments(
         output_dir=temp_dir.name,
-        save_strategy="steps",  # save every X steps
-        save_steps=100,
-        eval_strategy="epoch",
+        save_strategy="epoch",
+        evaluation_strategy="epoch",
         learning_rate=config.learning_rate_config,
         num_train_epochs=config.n_epochs_config,
         weight_decay=config.weight_decay,
@@ -175,10 +172,10 @@ def trainESM(trainSet, outDomainValSet, config):
 
             # Convert the list of tensors to a DataFrame row by row
             if i == 0:
-                df = pd.DataFrame(flattened_representation.numpy()).T
+                df = pd.DataFrame(flattened_representation.cpu().numpy()).T
             else:
                 df = pd.concat(
-                    [df, pd.DataFrame(flattened_representation.numpy()).T],
+                    [df, pd.DataFrame(flattened_representation.cpu().numpy()).T],
                     ignore_index=True,
                 )
 

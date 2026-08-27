@@ -39,17 +39,18 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
         logger.info("Sequences got!")
 
         # move from blast
+        valSetSize = max(1, round(len(filtered_df) * 0.1))
         if filtered_df["score"].sum() == 0:
             logger.warning(
                 "The 'score' column has all zero values. Falling back to simple random sampling."
             )
             # Use simple random sampling without weights
-            outDomainValSet = filtered_df.sample(frac=0.1, random_state=randomState)
+            outDomainValSet = filtered_df.sample(n=valSetSize, random_state=randomState)
             trainSet = filtered_df.drop(outDomainValSet.index)
         else:
             # Perform weighted sampling
             outDomainValSet = filtered_df.sample(
-                frac=0.1, weights="score", random_state=randomState
+                n=valSetSize, weights="score", random_state=randomState
             )
             trainSet = filtered_df.drop(outDomainValSet.index)
 

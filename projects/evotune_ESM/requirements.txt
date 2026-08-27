@@ -18,5 +18,6 @@ fair-esm==2.0.0
 numpy>=1.21.0
 biopython==1.81
 transformers==4.39.3
+accelerate==0.29.3
 datasets==2.19.1
 optuna==3.6.1
