@@ -11,16 +11,17 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **type** (required):
-- `feat` — new feature
-- `fix` — bug fix
-- `docs` — documentation only
-- `refactor` — code change that neither fixes a bug nor adds a feature
-- `perf` — performance improvement
-- `test` — adding or correcting tests
-- `build` — build system, dependencies
-- `ci` — CI/CD config
-- `chore` — everything else (tooling, config, housekeeping)
-- `revert` — reverts a previous commit
+
+- `feat` - new feature
+- `fix` - bug fix
+- `docs` - documentation only
+- `refactor` - code change that neither fixes a bug nor adds a feature
+- `perf` - performance improvement
+- `test` - adding or correcting tests
+- `build` - build system, dependencies
+- `ci` - CI/CD config
+- `chore` - everything else (tooling, config, housekeeping)
+- `revert` - reverts a previous commit
 
 **scope** (optional): area of the codebase affected, e.g. `feat(auth): ...`, `fix(conductor): ...`
 
@@ -30,13 +31,13 @@ Breaking changes: add `!` after type/scope (`feat!: ...`) or a `BREAKING CHANGE:
 
 ## Branches
 
-- `main` — stable, deployable
-- `dev` — integration branch, merge feature branches here first
+- `main` - stable, deployable
+- `dev` - integration branch, merge feature branches here first
 - feature branches: `<type>/<short-description>`, e.g. `feat/lab-results-name`, `fix/mutation-download`
 
 ## Pull requests
 
-Use the PR template. Keep PRs scoped to one concern where possible. Squash-merge or use a clean merge commit — avoid merge-commit noise from repeatedly merging `dev` back into a long-lived feature branch.
+Use the PR template. Keep PRs scoped to one concern where possible. Squash-merge or use a clean merge commit - avoid merge-commit noise from repeatedly merging `dev` back into a long-lived feature branch.
 
 ## Pre-commit hooks
 
@@ -45,8 +46,8 @@ This repo uses [pre-commit](https://pre-commit.com/) (see [SETUP.md](./SETUP.md)
 - **pre-commit / pre-push**: `black` (format) + `ruff --fix` (lint) on staged Python files
 - **commit-msg**: rejects commit messages that don't follow the Conventional Commits format above
 
-`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push — skipping hooks locally (`--no-verify`) just means CI catches it instead.
+`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push - skipping hooks locally (`--no-verify`) just means CI catches it instead.
 
-`ruff`'s enabled rule set (see [ruff.toml](./ruff.toml) for the ignore list) goes beyond formatting — it also flags things like blind `except Exception:`, naive (non-tz-aware) `datetime.now()`, and needless raise/except patterns. These need actual judgment per call site, not blind autofix — `ruff check --fix .` won't touch them.
+`ruff`'s enabled rule set (see [ruff.toml](./ruff.toml) for the ignore list) goes beyond formatting - it also flags things like blind `except Exception:`, naive (non-tz-aware) `datetime.now()`, and needless raise/except patterns. These need actual judgment per call site, not blind autofix - `ruff check --fix .` won't touch them.
 
 Run everything manually: `pre-commit run --all-files`

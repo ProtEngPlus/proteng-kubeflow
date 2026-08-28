@@ -10,7 +10,7 @@ if [ -f .venv/Scripts/python.exe ]; then
 elif [ -f .venv/bin/python ]; then
   PYTHON=.venv/bin/python
 else
-  echo "No .venv found — see SETUP.md to create one first."
+  echo "No .venv found - see SETUP.md to create one first."
   exit 1
 fi
 
