@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import threading
+import time
 
 sys.path.append("../../")
 
@@ -74,8 +75,19 @@ async def main(loop):
                 logger.error(f"Error processing message: {e}")
 
 
+RECONNECT_DELAY_SECONDS = 5
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(main(loop))
-    loop.close()
+    supervisorLogger = getLogger("Supervisor")
+    while True:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(main(loop))
+        except Exception as e:
+            supervisorLogger.error(f"Unexpected error from main(): {e}")
+        finally:
+            loop.close()
+        supervisorLogger.info(
+            f"main() exited - reconnecting in {RECONNECT_DELAY_SECONDS}s"
+        )
+        time.sleep(RECONNECT_DELAY_SECONDS)
