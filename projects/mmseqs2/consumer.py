@@ -84,9 +84,7 @@ if __name__ == "__main__":
         asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(main(loop))
-        except (
-            Exception
-        ) as e:  # noqa: BLE001 -- keep retrying no matter how main() ends
+        except Exception as e:  # noqa: BLE001 -- retry forever
             supervisorLogger.error(f"Unexpected error from main(): {e}")
         finally:
             loop.close()
