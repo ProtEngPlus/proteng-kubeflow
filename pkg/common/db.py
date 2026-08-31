@@ -20,7 +20,7 @@ def uploadToBucket(bucketName, fileName, file):
 
     bucket = storage_client.bucket(bucketName)
     blob = bucket.blob(fileName)
-    blob.upload_from_string(file)
+    blob.upload_from_string(file, timeout=120)
 
     return f"File {fileName} uploaded to {bucketName}."
 
@@ -31,7 +31,7 @@ def downloadFromBucket(bucketName, fileName):
     bucket = storage_client.bucket(bucketName)
     blob = bucket.blob(fileName)
 
-    return blob.download_as_string()
+    return blob.download_as_string(timeout=120)
 
 
 def getStorageClient():

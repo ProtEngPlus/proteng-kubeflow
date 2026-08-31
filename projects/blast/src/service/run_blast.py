@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+import socket
 
 import pandas as pd
 from Bio.Blast import NCBIWWW
@@ -10,6 +11,8 @@ from src.model.model import BlastParams
 
 from pkg.common.db import uploadToBucket
 from pkg.common.publisher import *
+
+socket.setdefaulttimeout(180)
 
 
 def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):

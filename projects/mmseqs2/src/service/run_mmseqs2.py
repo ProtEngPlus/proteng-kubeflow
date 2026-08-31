@@ -61,7 +61,9 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             "-c",
             str(mmseqs2Params.c / 100),
         ]
-        raw_result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        raw_result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, timeout=600
+        )
 
         if raw_result.returncode != 0 or not os.path.exists(RESULT_FILE):
             logger.error(f"job id {jobId}: error run mmseqs2: No result from mmseqs2")
