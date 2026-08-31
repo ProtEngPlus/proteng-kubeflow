@@ -19,9 +19,11 @@ python ncbi_throughput_test.py --trials 15 --outfile results.csv
 - Needs `biopython` and network access to NCBI. Run it wherever the blast service
   runs, using that service's Python and network path, so the measurement matches
   production.
-- Long: 15 trials x (1-45 min). Use `nohup ... &` and `tail -f` the log.
-- The CSV is appended and flushed per trial — an interrupted run keeps its rows,
-  just run again to add more.
+- Long: 15 trials x (1-45 min). Use `nohup ... &` and walk away.
+- Watch progress in the **CSV** (`cat results.csv`) — it is flushed per trial. The
+  stdout log is block-buffered when redirected to a file, so it only fills in when
+  the run ends (or pass `python -u` to unbuffer it).
+- An interrupted run keeps its CSV rows — just run again to add more.
 - Don't run it alongside a real BLAST job; two request streams from one IP can
   trip NCBI's rate limit.
 
@@ -41,9 +43,9 @@ with their own `venv/`. Copy the script in (terminal paste breaks the file — u
 cd ~/proteng-gpu/apps/blast
 export HTTP_PROXY=http://localhost:18888 HTTPS_PROXY=http://localhost:18888
 export NCBI_EMAIL="you@example.com"
-nohup venv/bin/python ncbi_throughput_test.py \
+nohup venv/bin/python -u ncbi_throughput_test.py \
     --trials 15 --outfile ~/ncbi_throughput.csv > ~/ncbi_throughput.log 2>&1 &
-tail -f ~/ncbi_throughput.log
+watch -n 30 cat ~/ncbi_throughput.csv    # or just: cat ~/ncbi_throughput.csv
 ```
 
 `localhost:18888` is the SSH-tunnel HTTP proxy the consumers use. Biopython there
