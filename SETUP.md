@@ -61,7 +61,7 @@ black .
 ruff check --fix .
 ```
 
-`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push.
+`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push. CI installs `black` / `ruff` **pinned to the same versions as `.pre-commit-config.yaml`** - when you bump one, bump both, or local and CI disagree about what passes. `ruff.toml` sets an explicit `select` so the rule set does not shift with the ruff version.
 
 ## Pre-commit hooks
 
@@ -75,3 +75,9 @@ pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commi
 ```
 
 Run everything manually: `pre-commit run --all-files`
+
+The `git commit` / `git push` hooks call `pre-commit` by its full path, so they
+work even when `pre-commit` is not on your `PATH`. Running it manually may not:
+`pip install --user` (and conda-base pip on Windows) puts the executable somewhere
+off `PATH`. If `pre-commit` is "not recognized", invoke it directly, e.g.
+`python -m pre_commit run --all-files`, or add its `Scripts` dir to `PATH`.
