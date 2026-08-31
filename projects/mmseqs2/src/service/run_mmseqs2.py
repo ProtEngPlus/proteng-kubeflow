@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+import shutil
 import subprocess
 
 import numpy as np
@@ -14,28 +15,29 @@ from pkg.common.publisher import *
 
 
 def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomState):
+    current_dir = os.getcwd()
+    QUERY_FILE = f"query_{jobId}.fasta"
+    DB_FILE = "uniprot_sprot.fasta"
+    RESULT_FILE = f"result_{jobId}.m8"
+    TMP_DIR = f"tmp_{jobId}"
+    query_file_path = os.path.join(current_dir, QUERY_FILE)
+    result_file_path = os.path.join(current_dir, RESULT_FILE)
+    tmp_dir_path = os.path.join(current_dir, TMP_DIR)
+
     try:
         logger.info(f"job id {jobId}: Running MMseqs2")
 
         seq_length = mmseqs2Params.seq_length
 
-        current_dir = os.getcwd()
-        QUERY_FILE = "query.fasta"
-        DB_FILE = "uniprot_sprot.fasta"
-        RESULT_FILE = "result.m8"
-        TMP_DIR = "tmp"
-
         # Create query file
-        with open(os.path.join(current_dir, QUERY_FILE), "w") as f:
+        with open(query_file_path, "w") as f:
             f.write(f">input_protein\n{mmseqs2Params.sequence}\n")
 
         # Ensure tmp dir exists
-        tmp_dir_path = os.path.join(current_dir, TMP_DIR)
         if not os.path.exists(tmp_dir_path):
             os.makedirs(tmp_dir_path)
 
         # Clean result if already exists
-        result_file_path = os.path.join(current_dir, RESULT_FILE)
         if os.path.exists(result_file_path):
             os.remove(result_file_path)
 
@@ -65,7 +67,7 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             cmd, capture_output=True, text=True, check=False, timeout=600
         )
 
-        if raw_result.returncode != 0 or not os.path.exists(RESULT_FILE):
+        if raw_result.returncode != 0 or not os.path.exists(result_file_path):
             logger.error(f"job id {jobId}: error run mmseqs2: No result from mmseqs2")
             message = JobStatusEventMessage(
                 service_name="mmseqs2-microservice",
@@ -82,7 +84,7 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             logger.info(f"Job {jobId} failed")
             return
 
-        with open(RESULT_FILE, "r") as f:
+        with open(result_file_path, "r") as f:
             lines = [line.strip() for line in f if line.strip()]
 
         # Data preparation
@@ -208,6 +210,15 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
             ),
         )
         publishJobStatusEvent(message)
+    finally:
+        try:
+            if os.path.exists(query_file_path):
+                os.remove(query_file_path)
+            if os.path.exists(result_file_path):
+                os.remove(result_file_path)
+            shutil.rmtree(tmp_dir_path, ignore_errors=True)
+        except Exception as cleanupErr:  # noqa: BLE001 -- cleanup is best-effort only
+            logger.warning(f"job id {jobId}: cleanup failed: {cleanupErr}")
 
 
 def extract_info(theader):
