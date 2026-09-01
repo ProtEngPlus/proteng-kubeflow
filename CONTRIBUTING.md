@@ -1,53 +1,20 @@
 # Contributing
 
-## Commit messages
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <short summary>
-
-[optional body]
-```
-
-**type** (required):
-
-- `feat` - new feature
-- `fix` - bug fix
-- `docs` - documentation only
-- `refactor` - code change that neither fixes a bug nor adds a feature
-- `perf` - performance improvement
-- `test` - adding or correcting tests
-- `build` - build system, dependencies
-- `ci` - CI/CD config
-- `chore` - everything else (tooling, config, housekeeping)
-- `revert` - reverts a previous commit
-
-**scope** (optional): area of the codebase affected, e.g. `feat(auth): ...`, `fix(conductor): ...`
-
-**summary**: imperative mood, lowercase, no trailing period. e.g. `fix: reconnect rabbitmq on dial failure`
-
-Breaking changes: add `!` after type/scope (`feat!: ...`) or a `BREAKING CHANGE:` footer in the body.
-
-## Branches
-
-- `main` - stable, deployable
-- `dev` - integration branch, merge feature branches here first
-- feature branches: `<type>/<short-description>`, e.g. `feat/lab-results-name`, `fix/mutation-download`
-
-## Pull requests
-
-Use the PR template. Keep PRs scoped to one concern where possible. Squash-merge or use a clean merge commit - avoid merge-commit noise from repeatedly merging `dev` back into a long-lived feature branch.
+กติกา commit message / branch / PR กับวิธีติดตั้ง pre-commit ของทุก repo ProtEngPlus เขียนรวมไว้ที่
+[manual-guides-2023/CONTRIBUTING.md](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/CONTRIBUTING.md)
+repo นี้เก็บแค่ hook เฉพาะของตัวเอง
 
 ## Pre-commit hooks
 
-This repo uses [pre-commit](https://pre-commit.com/) (see [SETUP.md](./SETUP.md) to install):
+- **pre-commit / pre-push**: `black` (format) + `ruff --fix` (lint) กับไฟล์ Python ที่ staged
+- **commit-msg**: ปฏิเสธ commit message ที่ผิดฟอร์แมต Conventional Commits
 
-- **pre-commit / pre-push**: `black` (format) + `ruff --fix` (lint) on staged Python files
-- **commit-msg**: rejects commit messages that don't follow the Conventional Commits format above
+`black --check` + `ruff check` (ไม่ autofix) รันใน CI (`.github/workflows/test-build-dev.yaml`) ทุก
+push ด้วย CI ลง `black` / `ruff` เวอร์ชันเดียวกับ `.pre-commit-config.yaml` เป๊ะ — bump ตัวไหน bump
+ทั้งคู่ ไม่งั้น local กับ CI เห็นไม่ตรงกัน `ruff.toml` ตั้ง `select` ชัดเจนไว้กันกฎเลื่อนตามเวอร์ชัน
 
-`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push - skipping hooks locally (`--no-verify`) just means CI catches it instead.
+`ruff` จับมากกว่าแค่เรื่อง format เช่น blind `except Exception:`, `datetime.now()` แบบไม่มี tz,
+raise/except ที่ไม่จำเป็น พวกนี้ต้องใช้วิจารณญาณต่อจุด `ruff check --fix .` ไม่แตะให้ (ดู ignore list
+ใน [ruff.toml](./ruff.toml))
 
-`ruff`'s enabled rule set (see [ruff.toml](./ruff.toml) for the ignore list) goes beyond formatting - it also flags things like blind `except Exception:`, naive (non-tz-aware) `datetime.now()`, and needless raise/except patterns. These need actual judgment per call site, not blind autofix - `ruff check --fix .` won't touch them.
-
-Run everything manually: `pre-commit run --all-files`
+รันมือทั้งหมด: `pre-commit run --all-files`

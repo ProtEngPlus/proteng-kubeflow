@@ -1,239 +1,231 @@
 # Setup
 
-This file is **local development**. The live dev + production deployment runs on the GPU
-VM — see [docs/gpu-vm.md](./docs/gpu-vm.md).
+Setup ทั้งระบบครั้งแรกดูที่ [Guidebook](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/README.md) ไฟล์นี้มีแค่รายละเอียดเฉพาะของ `proteng-kubeflow`
 
-## The 6 services
+ไฟล์นี้เรื่อง **การพัฒนาบนเครื่อง local** deployment จริง (dev + production) รันบน GPU VM ดู
+[docs/gpu-vm.md](./docs/gpu-vm.md)
 
-All 6 are the same shape: a RabbitMQ consumer (`consumer.py`) that binds an **exclusive**
-queue on the `logs_topic` topic exchange with one routing key, runs one job on a background
-thread, and publishes the result to the durable `job_status_event` queue (what
-`proteng-conductor` reads back). They differ only in what the job does and what it needs at
-run time.
+## service ทั้ง 6 ตัว
 
-| service | queue | routing key | pipeline stage | needs at run time | runs locally? |
+ทั้ง 6 ตัวรูปแบบเดียวกันหมด: เป็น RabbitMQ consumer (`consumer.py`) ที่ bind queue แบบ
+**exclusive** บน topic exchange `logs_topic` ด้วย routing key เดียว รัน job หนึ่งงานบน background
+thread แล้ว publish ผลลัพธ์ไป durable queue `job_status_event` (ที่ `proteng-conductor` อ่าน)
+ต่างกันแค่ job ทำอะไรและต้องใช้อะไรตอนรัน
+
+| service | queue | routing key | pipeline stage | ต้องใช้ตอนรัน | รัน local ได้มั้ย |
 | --- | --- | --- | --- | --- | --- |
-| `blast` | `blast_queue` | `query.blast` | query | internet → NCBI BLAST (`NCBIWWW.qblast`) | yes |
-| `mmseqs2` | `mmseqs2_queue` | `query.mmseqs2` | query | `mmseqs` binary on `PATH` + `projects/mmseqs2/uniprot_sprot.fasta` (committed) | yes, after the binary step below |
-| `evotune` | `evotune_queue` | `evotune.unirep` | improvement | reads the query stage's artifact from GCS; `jax-unirep` (mlstm64 weights ship with the pip package) | yes, with the fake-gcs + `jax-unirep` patch below |
-| `fittop` | `fittop_queue` | `fittop.ridgecv` | improvement | reads the `evotune` artifact from GCS; `jax-unirep` `get_reps` | yes, same |
-| `mutation` | `mutation_queue` | `mutation.mutation` | improvement | reads the `evotune` + `fittop` artifacts from GCS; `jax-unirep` `get_reps` | yes, same |
-| `evotune_ESM` | `evotune_ESM_queue` | `evotune.ESM` | improvement (POC, not wired into conductor) | GCS + Hugging Face model download (`AutoModelForMaskedLM.from_pretrained`) + `torch` (GPU ideally) | not covered |
+| `blast` | `blast_queue` | `query.blast` | query | internet → NCBI BLAST (`NCBIWWW.qblast`) | ได้ |
+| `mmseqs2` | `mmseqs2_queue` | `query.mmseqs2` | query | binary `mmseqs` บน `PATH` + `projects/mmseqs2/uniprot_sprot.fasta` (commit ไว้แล้ว) | ได้ หลังลง binary ตามข้างล่าง |
+| `evotune` | `evotune_queue` | `evotune.unirep` | improvement | อ่าน artifact ของ query stage จาก GCS; `jax-unirep` (mlstm64 weights มากับ pip package) | ได้ ถ้ามี fake-gcs + patch `jax-unirep` ข้างล่าง |
+| `fittop` | `fittop_queue` | `fittop.ridgecv` | improvement | อ่าน artifact ของ `evotune` จาก GCS; `jax-unirep` `get_reps` | ได้ เหมือนกัน |
+| `mutation` | `mutation_queue` | `mutation.mutation` | improvement | อ่าน artifact ของ `evotune` + `fittop` จาก GCS; `jax-unirep` `get_reps` | ได้ เหมือนกัน |
+| `evotune_ESM` | `evotune_ESM_queue` | `evotune.ESM` | improvement (POC ยังไม่ต่อเข้า conductor) | GCS + โหลด Hugging Face model (`AutoModelForMaskedLM.from_pretrained`) + `torch` (ควรมี GPU) | ไม่ครอบคลุมในนี้ |
 
-Every stage's input is the previous stage's GCS output - no externally-supplied trained
-models. With **blank GCP creds** you can run `blast` (up to the upload) and `mmseqs2` (same,
-after installing the binary); a job dies with `PRIVATE_KEY is not set` at the first storage
-call. Add the **local fake-gcs-server** (step 2) and the whole chain runs - see "Full
-pipeline locally" below. `dev_tools/rabbitmq/send_job.py` publishes a single query-stage
-job for isolated testing (pass the routing key, e.g. `query.mmseqs2`); the improvement
-stages only get messages from the conductor.
+input ของทุก stage คือ output ของ stage ก่อนหน้า ไม่มี trained model ที่ส่งมาจากข้างนอก ถ้า
+credential GCP ว่าง จะรัน `blast` (ถึงก่อน upload) กับ `mmseqs2` (เหมือนกัน หลังลง binary) ได้
+job จะตายด้วย `PRIVATE_KEY is not set` ตอนเรียก storage ครั้งแรก เพิ่ม **fake-gcs-server local**
+(ขั้นที่ 2) แล้วทั้ง chain รันได้ — ดู "Full pipeline locally" ข้างล่าง
+`dev_tools/rabbitmq/send_job.py` publish job query-stage หนึ่งงานสำหรับทดสอบเดี่ยว ๆ (ส่ง routing
+key เช่น `query.mmseqs2`) ส่วน improvement stage ได้ message จาก conductor เท่านั้น
 
 ## Run locally
 
-Each of the 6 microservices under `projects/` (`blast`, `evotune`, `evotune_ESM`, `fittop`, `mmseqs2`, `mutation`) is set up the same way, but every one of them has its own venv and its own quirks - see the table below before you start.
+แต่ละ microservice ใน `projects/` (`blast`, `evotune`, `evotune_ESM`, `fittop`, `mmseqs2`,
+`mutation`) setup แบบเดียวกัน แต่แต่ละตัวมี venv ของตัวเองและมีจุดจุกจิกของตัวเอง — ดูตารางข้างล่าง
+ก่อนเริ่ม
 
-1. **Env file** - each project already has `.env.local` pointing at a **local** broker (`RABBITMQ_URL=amqp://guest:guest@localhost:5672/`) with dummy/blank GCP creds. `consumer.py` loads plain `.env` (not `.env.local`), so copy it:
+1. **ไฟล์ env** — แต่ละ project มี `.env.local` ที่ชี้ broker **local** อยู่แล้ว
+   (`RABBITMQ_URL=amqp://guest:guest@localhost:5672/`) พร้อม GCP creds ว่าง/dummy `consumer.py`
+   โหลด `.env` (ไม่ใช่ `.env.local`) เลยต้อง copy:
 
    ```sh
    cd projects/<project-name>
    cp .env.local .env
    ```
 
-   So a locally-run consumer talks to a RabbitMQ **you** run (`docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management`), isolated - it never touches the dev or production queues. It gets no jobs until you publish one yourself (`dev_tools/rabbitmq/send_job.py`).
+   consumer ที่รัน local จะคุยกับ RabbitMQ ที่ **คุณ** รันเอง
+   (`docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management`) แยกขาด ไม่แตะ queue ของ dev
+   หรือ production ไม่มี job เข้าจนกว่าจะ publish เอง (`dev_tools/rabbitmq/send_job.py`)
 
-   **Never commit real GCP service-account credentials to any tracked file**
+   **ห้าม commit GCP service-account credential จริงลงไฟล์ใด ๆ ที่ git ติดตาม**
 
-2. **GCS - blank creds, or a local emulator.** Every service reads/writes job
-   artifacts through `pkg/common/db.py`. Two ways to run locally:
+2. **GCS — creds ว่าง หรือใช้ emulator local** ทุก service อ่าน/เขียน job artifact ผ่าน
+   `pkg/common/db.py` มีสองทาง:
 
-   - **Leave the GCP block blank** (default). The job runs and then raises
-     `PRIVATE_KEY is not set` at the first GCS call - fine for testing the
-     RabbitMQ wiring and everything up to storage.
-   - **Point at a local [fake-gcs-server](https://github.com/fsouza/fake-gcs-server)**
-     to let the job finish. A compose file with the four pipeline buckets
-     pre-created lives at `dev_tools/fake-gcs/`:
+   - **ปล่อย GCP block ว่าง** (default) job รันแล้ว raise `PRIVATE_KEY is not set` ตอนเรียก GCS
+     ครั้งแรก — พอสำหรับทดสอบ RabbitMQ wiring และทุกอย่างก่อนถึง storage
+   - **ชี้ไป [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) local** ให้ job รันจบได้
+     compose file พร้อม bucket ทั้ง 4 ของ pipeline อยู่ที่ `dev_tools/fake-gcs/`:
 
      ```sh
      docker compose -f dev_tools/fake-gcs/compose.yaml up -d
-     # then in each projects/<svc>/.env you want to run against it:
+     # แล้วในแต่ละ projects/<svc>/.env ที่จะรันกับมัน:
      STORAGE_EMULATOR_HOST=http://localhost:4443
      ```
 
-     Consumers read `.env` **once at startup** - restart any that were already
-     running. `4443` is fake-gcs-server's own default port; the
-     `google-cloud-storage` library reads `STORAGE_EMULATOR_HOST` itself and
-     routes every request there instead of `storage.googleapis.com`, so
-     `getStorageClient()` only has to skip the service-account credentials. See
-     `dev_tools/fake-gcs/README.md` for inspecting and resetting the store, and
-     "Full pipeline locally" below for the end-to-end run.
+     consumer อ่าน `.env` **ครั้งเดียวตอน startup** — restart ตัวที่รันอยู่ `4443` เป็น default
+     port ของ fake-gcs-server เอง library `google-cloud-storage` อ่าน `STORAGE_EMULATOR_HOST`
+     เองแล้ว route request ทุกอันไปที่นั่นแทน `storage.googleapis.com` ดู
+     `dev_tools/fake-gcs/README.md` เรื่องวิธี inspect/reset store และ "Full pipeline locally"
+     ข้างล่างสำหรับการรัน end-to-end
 
-   `STORAGE_EMULATOR_HOST` is **opt-in and local only** - it is committed blank in
-   every `.env.example`, and the dev and production consumers on the GPU VM must
-   never set it, or the library would silently route real jobs to a non-existent
-   local emulator instead of GCS.
+   `STORAGE_EMULATOR_HOST` เป็น **opt-in และ local เท่านั้น** — commit ว่างไว้ในทุก `.env.example`
+   และ consumer dev/production บน GPU VM **ห้ามตั้ง** ไม่งั้น library จะ route job จริงไป emulator
+   local ที่ไม่มีอยู่แทนที่จะเป็น GCS
 
-3. **Create a venv and install dependencies** - the pinned exact versions in each `requirements.txt` (`pandas==2.1.1`, `pydantic==2.5.2`, etc.) don't have prebuilt wheels for current Python and fail to build from source (needs a C/Rust compiler toolchain we don't have). Install **unpinned** instead and let pip resolve modern compatible versions:
+3. **สร้าง venv แล้วลง dependency** — version ที่ pin ไว้เป๊ะใน `requirements.txt` แต่ละไฟล์
+   (`pandas==2.1.1`, `pydantic==2.5.2`, ฯลฯ) ไม่มี prebuilt wheel สำหรับ Python เวอร์ชันปัจจุบัน
+   และ build จาก source ไม่ผ่าน (ต้องมี C/Rust compiler toolchain ที่เราไม่มี) ลงแบบ **ไม่ pin**
+   แล้วให้ pip resolve version ใหม่ที่เข้ากันได้:
 
    ```sh
    python -m venv .venv
    source .venv/Scripts/activate   # Windows Git Bash; macOS/Linux: source .venv/bin/activate
-   sed 's/[=<>].*$//' requirements.txt > /tmp/req.txt   # strip version pins
+   sed 's/[=<>].*$//' requirements.txt > /tmp/req.txt   # ตัด version pin
    pip install -r /tmp/req.txt -r ../../pkg/common/requirements.txt
    ```
 
-   Some `requirements.txt` files are saved as UTF-16 (not plain ASCII) - if `sed`/`grep` on one errors out or produces garbage, check with `file requirements.txt` first and decode via `iconv -f UTF-16LE -t UTF-8` before piping to `sed`.
+   `requirements.txt` บางไฟล์ save เป็น UTF-16 (ไม่ใช่ ASCII) — ถ้า `sed`/`grep` พังหรือได้ขยะ
+   เช็คด้วย `file requirements.txt` ก่อน แล้ว decode ด้วย `iconv -f UTF-16LE -t UTF-8` ก่อน pipe
+   เข้า `sed`
 
-   **Per-project extras** (on top of the above):
+   **จุดจุกจิกต่อ project** (เพิ่มจากด้านบน):
 
-   | Project                                        | Extra step needed                                                                                                                                                                                    |
-   | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `blast`                                        | none                                                                                                                                                                                                 |
-   | `mmseqs2`                                      | (1) drop `bson` from the install - it's a legacy/unmaintained package that fails to build on modern Python, and is unnecessary anyway: `pymongo` already provides `from bson import ObjectId` on its own. (2) needs the `mmseqs` binary on `PATH` - see below                                            |
-   | `evotune`, `evotune_ESM`, `fittop`, `mutation` | also `pip install "setuptools<81"` - these use `jax-unirep`, which does `import pkg_resources` (part of setuptools); setuptools ≥81 dropped that module                                              |
-   | `evotune_ESM`                                  | heaviest install (`torch`, `transformers`, `datasets`, `optuna`) - expect several minutes                                                                                                            |
+   | Project | ขั้นตอนเพิ่ม |
+   | --- | --- |
+   | `blast` | ไม่มี |
+   | `mmseqs2` | (1) เอา `bson` ออกจาก install — เป็น package legacy/ไม่ maintain build ไม่ผ่านบน Python ใหม่ และไม่จำเป็น: `pymongo` ให้ `from bson import ObjectId` อยู่แล้ว (2) ต้องมี binary `mmseqs` บน `PATH` — ดูข้างล่าง |
+   | `evotune`, `evotune_ESM`, `fittop`, `mutation` | เพิ่ม `pip install "setuptools<81"` — พวกนี้ใช้ `jax-unirep` ซึ่ง `import pkg_resources` (ส่วนหนึ่งของ setuptools) setuptools ≥81 เอา module นั้นออกแล้ว |
+   | `evotune_ESM` | install หนักสุด (`torch`, `transformers`, `datasets`, `optuna`) — หลายนาที |
 
-   **`mmseqs2` - the `mmseqs` binary.** `run_mmseqs2.py` shells out to `mmseqs
-   easy-search`, so the binary must be on `PATH` (there is no path override in
-   the code). The search database (`projects/mmseqs2/uniprot_sprot.fasta`, ~286
-   MB Swiss-Prot) is committed in the repo, so that part is already in place.
+   **`mmseqs2` — binary `mmseqs`** `run_mmseqs2.py` shell out ไป `mmseqs easy-search` เลย binary
+   ต้องอยู่บน `PATH` (ไม่มี path override ในโค้ด) search database
+   (`projects/mmseqs2/uniprot_sprot.fasta`, ~286 MB Swiss-Prot) commit ไว้ใน repo แล้ว
 
-   - **Windows**: download
+   - **Windows**: โหลด
      <https://github.com/soedinglab/MMseqs2/releases/latest/download/mmseqs-win64.zip>
-     (the `mmseqs.com/latest/` mirror only carries the Linux/macOS builds) and
-     extract it, e.g. to `C:\Users\<you>\mmseqs`. The archive ships only
-     `bin\mmseqs.exe` + `bin\busybox.exe`; `mmseqs easy-search` is a shell
-     workflow that needs GNU-style tools, so install the BusyBox applets once:
+     (mirror `mmseqs.com/latest/` มีแค่ build Linux/macOS) แล้วแตกไฟล์ เช่นไปที่
+     `C:\Users\<you>\mmseqs` archive มีแค่ `bin\mmseqs.exe` + `bin\busybox.exe`;
+     `mmseqs easy-search` เป็น shell workflow ที่ต้องใช้ tool แบบ GNU เลยต้อง install BusyBox
+     applet ครั้งเดียว:
 
      ```powershell
      C:\Users\<you>\mmseqs\bin\busybox.exe --install C:\Users\<you>\mmseqs\bin
      ```
 
-     Then add **`...\mmseqs\bin`** (not the folder with `mmseqs.bat`) to your
-     user `PATH` - `run_mmseqs2.py` calls `subprocess.run(["mmseqs", ...])`
-     without a shell, and Windows process creation resolves `mmseqs.exe` but not
-     `mmseqs.bat`:
+     แล้วเพิ่ม **`...\mmseqs\bin`** (ไม่ใช่โฟลเดอร์ที่มี `mmseqs.bat`) เข้า user `PATH` —
+     `run_mmseqs2.py` เรียก `subprocess.run(["mmseqs", ...])` โดยไม่ผ่าน shell และ Windows
+     resolve `mmseqs.exe` ได้แต่ `mmseqs.bat` ไม่ได้:
 
      ```powershell
      [Environment]::SetEnvironmentVariable("Path",
        [Environment]::GetEnvironmentVariable("Path","User") + ";C:\Users\<you>\mmseqs\bin", "User")
      ```
 
-   - **macOS**: `brew install mmseqs2`, or the `mmseqs-osx-universal.tar.gz` from
-     the releases page. **Linux**: the static `mmseqs-linux-*.tar.gz` (pick
-     `avx2` on a modern CPU, `sse41`/`sse2` otherwise) - put `mmseqs` on `PATH`.
-   - Verify in a **new** terminal (close the `./run.sh` window too - it keeps the
-     old `PATH`): `mmseqs version` prints a commit hash.
+   - **macOS**: `brew install mmseqs2` หรือ `mmseqs-osx-universal.tar.gz` จากหน้า releases
+     **Linux**: `mmseqs-linux-*.tar.gz` แบบ static (เลือก `avx2` บน CPU ใหม่, `sse41`/`sse2` ถ้าเก่า)
+     — เอา `mmseqs` ใส่ `PATH`
+   - เช็คใน terminal **ใหม่** (ปิด window `./run.sh` ด้วย มันถือ `PATH` เก่า):
+     `mmseqs version` ต้องพิมพ์ commit hash
 
-   Without it, `mmseqs2` jobs fail immediately with
-   `FileNotFoundError: ... 'mmseqs'`. If you don't need to exercise `mmseqs2`
-   locally, just skip this service - it runs fine on the GPU VM.
+   ถ้าไม่มี job `mmseqs2` จะ fail ทันทีด้วย `FileNotFoundError: ... 'mmseqs'` ถ้าไม่ต้องรัน
+   `mmseqs2` local ก็ข้าม service นี้ได้ มันรันบน GPU VM ได้ปกติ
 
-4. **Run a microservice** - each project has a `run.sh` that copies `.env.local` → `.env` (first run only) and calls the venv's `python` directly, so you never have to remember to `source .venv/Scripts/activate` first. From the repo root:
+4. **รัน microservice** — แต่ละ project มี `run.sh` ที่ copy `.env.local` → `.env` (รันครั้งแรก
+   เท่านั้น) แล้วเรียก `python` ของ venv ตรง ๆ ไม่ต้อง `source .venv/Scripts/activate` ก่อน จาก
+   root ของ repo:
 
    ```sh
-   ./run.sh blast          # one service (or: cd projects/blast && ./run.sh)
-   ./run.sh all            # every service, each backgrounded, Ctrl-C stops all
+   ./run.sh blast          # service เดียว (หรือ: cd projects/blast && ./run.sh)
+   ./run.sh all            # ทุก service แต่ละตัว background, Ctrl-C หยุดหมด
    ```
 
-   (Runs `consumer.py`, the RabbitMQ-consumer entrypoint - currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up. If you'd rather run it manually: `source .venv/Scripts/activate` then `python consumer.py`.)
+   (รัน `consumer.py` ซึ่งเป็น entrypoint ที่ใช้จริงตอนนี้ `microservice.py` ในแต่ละ project เป็น
+   FastAPI entrypoint เก่าที่ไม่ได้ต่อแล้ว ถ้าจะรันมือ: `source .venv/Scripts/activate` แล้ว
+   `python consumer.py`)
 
-   Done when: logs show `Connecting to RabbitMQ` → `Connected to RabbitMQ` → `Consuming messages`, no crash. No HTTP port - it's a plain consumer, not a server. First run can take 20-30s before anything prints (slow `jax`/ML library import), that's normal, not a hang.
+   เสร็จเมื่อ log ขึ้น `Connecting to RabbitMQ` → `Connected to RabbitMQ` → `Consuming messages`
+   ไม่ crash ไม่มี HTTP port เป็น consumer เปล่า ๆ รันครั้งแรกอาจ 20-30 วิ ก่อนมีอะไรขึ้น (import
+   `jax`/ML library ช้า) ปกติ ไม่ใช่ค้าง
 
-   Each microservice is its own blocking process with its own venv. `./run.sh all` backgrounds all of them (skipping `evotune_ESM` - it pulls `torch`; `RUN_ESM=1 ./run.sh all` to include it), but you usually only need the one(s) relevant to what you're testing, and every venv must already exist.
+   แต่ละ microservice เป็น process ที่ block ตัวเองมี venv ของตัวเอง `./run.sh all` background
+   ทุกตัว (ข้าม `evotune_ESM` — มันดึง `torch`; `RUN_ESM=1 ./run.sh all` ถ้าจะเอาด้วย) แต่ปกติ
+   ต้องการแค่ตัวที่เกี่ยวกับที่กำลังทดสอบ และทุก venv ต้องมีอยู่ก่อน
 
 ## Full pipeline locally
 
-Runs `blast|mmseqs2 → evotune → fittop → mutation` to **Completed** on one machine, driven
-by the real `proteng-conductor`. Each stage hands the next one an artifact through a GCS
-bucket, so every stage's input is the previous stage's output:
+รัน `blast|mmseqs2 → evotune → fittop → mutation` จนขึ้น **Completed** บนเครื่องเดียว โดยมี
+`proteng-conductor` จริงเป็นตัวขับ แต่ละ stage ส่ง artifact ให้ stage ถัดไปผ่าน GCS bucket input
+ของทุก stage คือ output ของ stage ก่อนหน้า:
 
 ```
 query (blast|mmseqs2) --> similar_protein --> evotune --> unirep --> fittop --> ridgecv --> mutation --> mutation
 ```
 
-`evotune_ESM` is not part of this - it is a POC with no conductor stage.
+`evotune_ESM` ไม่อยู่ใน chain นี้ — เป็น POC ไม่มี stage ใน conductor
 
-1. **Infra**: RabbitMQ + Mongo (see step 1) + the GCS emulator:
+1. **Infra**: RabbitMQ + Mongo (ดูขั้นที่ 1) + GCS emulator:
 
    ```sh
    docker compose -f dev_tools/fake-gcs/compose.yaml up -d
-   curl -s localhost:4443/storage/v1/b        # lists similar_protein, unirep, ridgecv, mutation
+   curl -s localhost:4443/storage/v1/b        # list similar_protein, unirep, ridgecv, mutation
    ```
 
-2. **Patch `jax-unirep`** for `evotune` / `fittop` / `mutation` (modern JAX removed the
-   `jax.numpy.clip(a_min=...)` kwarg these still use):
+2. **Patch `jax-unirep`** ให้ `evotune` / `fittop` / `mutation` (JAX ใหม่เอา kwarg
+   `jax.numpy.clip(a_min=...)` ที่พวกนี้ยังใช้ออกแล้ว):
 
    ```sh
    python dev_tools/patches/fix_jax_unirep.py
    ```
 
-   Re-run this whenever you rebuild one of those venvs (see `dev_tools/patches/README.md`).
+   รันซ้ำทุกครั้งที่ rebuild venv พวกนั้น (ดู `dev_tools/patches/README.md`)
 
-3. **App services** - from each repo, with its `.env.local` (defaults are already local -
-   see each repo's `SETUP.md`):
+3. **App service** — จากแต่ละ repo ด้วย `.env.local` (default เป็น local อยู่แล้ว — ดู `SETUP.md`
+   ของแต่ละ repo):
 
    ```sh
-   # proteng-user-mgmt, proteng-conductor, proteng-bff  (Git Bash, one terminal each)
+   # proteng-user-mgmt, proteng-conductor, proteng-bff  (Git Bash, terminal ละอัน)
    ./run.sh
    # protengplus-frontend
    npm run dev
    ```
 
-4. **Consumers** - set `STORAGE_EMULATOR_HOST=http://localhost:4443` in each
-   `projects/<svc>/.env` (`blast`, `mmseqs2`, `evotune`, `fittop`, `mutation`), then:
+4. **Consumer** — ตั้ง `STORAGE_EMULATOR_HOST=http://localhost:4443` ในแต่ละ `projects/<svc>/.env`
+   (`blast`, `mmseqs2`, `evotune`, `fittop`, `mutation`) แล้ว:
 
    ```sh
-   ./run.sh all        # from the mmseqs-on-PATH shell; evotune_ESM is skipped
+   ./run.sh all        # จาก shell ที่มี mmseqs บน PATH; evotune_ESM ถูกข้าม
    ```
 
-   All five reach `Consuming messages`.
+   ทั้ง 5 ตัวขึ้น `Consuming messages`
 
-5. **Submit** - in the frontend: sign up, create an **auto** job, choose a query tool,
-   submit. Watch the consumer logs go
-   `mmseqs2 … completed` → `evotune … completed` → `fittop … completed` →
-   `mutation … completed`; the UI job flips to **Completed**. Confirm the final artifact:
+5. **Submit** — ในหน้าเว็บ: สมัคร user สร้าง job แบบ **auto** เลือก query tool submit ดู log ของ
+   consumer ไล่ `mmseqs2 … completed` → `evotune … completed` → `fittop … completed` →
+   `mutation … completed`; job ในหน้าเว็บเปลี่ยนเป็น **Completed** เช็ค artifact สุดท้าย:
 
    ```sh
    curl -s localhost:4443/storage/v1/b/mutation/o
    ```
 
-The job-config values the frontend sends can look odd (e.g. `e: 70`, `min_seq_id: 70`) -
-that is a known frontend typing bug (the `e` field is typed `percent` in
-`createJobConfig.ts`), not something wrong with your setup, and it does not block the run.
+ค่า job-config ที่ frontend ส่งมาอาจดูแปลก (เช่น `e: 70`, `min_seq_id: 70`) เป็น bug typing ของ
+frontend (field `e` type เป็น `percent` ใน `createJobConfig.ts`) ไม่ใช่ setup ผิด และไม่ block
+การรัน
 
-## Format
+## Format & lint
 
-`black` autofixes on commit/push. Run manually against the whole repo:
+`black` autofix ตอน commit/push, `ruff` autofix ปัญหาส่วนใหญ่ รันมือทั้ง repo:
 
 ```sh
 black .
-```
-
-## Lint
-
-`ruff` autofixes most issues on commit/push. Run manually:
-
-```sh
 ruff check --fix .
 ```
 
-`black --check` and `ruff check` (no autofix) also run in CI (`.github/workflows/test-build-dev.yaml`) on every push. CI installs `black` / `ruff` **pinned to the same versions as `.pre-commit-config.yaml`** - when you bump one, bump both, or local and CI disagree about what passes. `ruff.toml` sets an explicit `select` so the rule set does not shift with the ruff version.
+`black --check` + `ruff check` (ไม่ autofix) รันใน CI (`.github/workflows/test-build-dev.yaml`)
+ทุก push CI ลง `black`/`ruff` version เดียวกับ `.pre-commit-config.yaml` เป๊ะ — bump ตัวไหน bump
+ทั้งคู่ `ruff.toml` ตั้ง `select` ชัดเจนกันกฎเลื่อนตาม version รายละเอียด hook ดู
+[CONTRIBUTING.md](./CONTRIBUTING.md)
 
-## Pre-commit hooks
-
-Format + lint above run automatically via [pre-commit](https://pre-commit.com/) on both `git commit` and `git push`. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
-
-Install once per clone:
-
-```sh
-pip install pre-commit
-pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg
-```
-
-Run everything manually: `pre-commit run --all-files`
-
-The `git commit` / `git push` hooks call `pre-commit` by its full path, so they
-work even when `pre-commit` is not on your `PATH`. Running it manually may not:
-`pip install --user` (and conda-base pip on Windows) puts the executable somewhere
-off `PATH`. If `pre-commit` is "not recognized", invoke it directly, e.g.
-`python -m pre_commit run --all-files`, or add its `Scripts` dir to `PATH`.
+hook `git commit` / `git push` เรียก `pre-commit` ด้วย full path เลยทำงานแม้ `pre-commit` ไม่อยู่
+บน `PATH` แต่รันมือเองอาจไม่ได้: `pip install --user` (กับ conda-base pip บน Windows) วาง
+executable ไว้นอก `PATH` ถ้า `pre-commit` "not recognized" เรียกตรง ๆ เช่น
+`python -m pre_commit run --all-files` หรือเพิ่มโฟลเดอร์ `Scripts` เข้า `PATH`

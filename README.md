@@ -1,88 +1,89 @@
 # proteng-kubeflow
 
-This repository is basically a place that create _**microservices docker image**_ for ML pipeline
+repo นี้คือที่สร้าง _**docker image ของ microservice**_ สำหรับ ML pipeline
 
-PS. at first **_we_**(the first proteng students group to do this project) plan to use kubeflow for our pipeline (hence the name "kubeflow"). But later on into the project, we decided not to use it(kubeflow) and you can find more info on [_devops_ _repository_](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops)
+PS. ตอนแรกกลุ่ม proteng รุ่นแรกที่ทำ project นี้วางแผนจะใช้ kubeflow ทำ pipeline (ชื่อ repo เลย
+เป็น "kubeflow") แต่ทีหลังตัดสินใจไม่ใช้ อ่านเพิ่มได้ที่
+[devops repository](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops)
 
-See [SETUP.md](./SETUP.md) to run a microservice locally, [CONTRIBUTING.md](./CONTRIBUTING.md) for commit conventions and pre-commit hooks, and **[docs/gpu-vm.md](./docs/gpu-vm.md)** for the real deployment — the whole `ml-pipeline` (dev **and** production) runs off-cluster on a GPU VM, not from the images this repo builds. `dev_tools/` holds standalone helpers (`ncbi/` throughput test).
+วิธีรัน microservice บนเครื่อง local ดู [SETUP.md](./SETUP.md) กติกา commit กับ pre-commit hook ดู
+[CONTRIBUTING.md](./CONTRIBUTING.md) และ **[docs/gpu-vm.md](./docs/gpu-vm.md)** สำหรับ deployment
+จริง — ตอนนี้ `ml-pipeline` ทั้งหมด (dev **และ** production) รันนอก cluster บน GPU VM ไม่ได้ใช้
+image ที่ repo นี้ build โฟลเดอร์ `dev_tools/` เก็บ helper แยก (`ncbi/` throughput test)
 
-## Table of Contents
-
-- [Project Structure](#project-structure)
-- [How to add new microservice](#how-to-add-new-microservice)
-- [How to use microservice in ML pipeline](#how-to-use-microservice-in-production)
+เพิ่งเริ่มกับ ProtEngPlus? เริ่มที่ [Guidebook](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/README.md) ก่อน
 
 ## Project Structure
 
-This is a mono-repo project. Each project in the `projects` folder is isolated from each other (Each project is a `microservice` that will be used for ML Pipeline).
-The `pkg` folder contains the common services/files that is shared across microservices.
+เป็น mono-repo แต่ละ project ใน `projects/` แยกขาดจากกัน (แต่ละตัวคือ `microservice` หนึ่งตัวของ
+ML pipeline) โฟลเดอร์ `pkg` เก็บ service/ไฟล์ที่ใช้ร่วมกันข้าม microservice
 
 <pre>
 .
-├── pkg                                 # shared package that all modules can use
+├── pkg                                 # shared package ที่ทุก module ใช้ได้
 │   ├── common
-│   |   ├── rabbitmq.py 
-│   |   └── requirements.txt            # each pkg module will have their dependencies declared
+│   |   ├── rabbitmq.py
+│   |   └── requirements.txt            # แต่ละ pkg module ประกาศ dependency ของตัวเอง
 |   └── some-library
 |       ├── some_module.py
 │       └── requirements.txt
-| 
+|
 └── projects
     |
     └── example
-        ├── docker                      # each projects can have multiple <b>Dockerfile</b>s for different type of apps to build
-        |   └── microservice.Dockerfile  
-        |                               # the <b>entrypoint</b> files to run. projects can have multiple entrypoints, with each one defines 1 app.
-        ├── microservice.py             # entrypoint that use FastAPI (first version)
-        ├── consumer.py                 # entrypoint that use RabbitMQ (second version) <b>(currently use this version)</b>
-        |  
-        ├── requirements.txt            # <b>dependencies</b> for 'example' microservice
-        └── src                         # src for 'example' microservice
-            ├── service                 # main source code folder for that project ( contain all logics in service )
+        ├── docker                      # แต่ละ project มีได้หลาย <b>Dockerfile</b> สำหรับ app คนละแบบ
+        |   └── microservice.Dockerfile
+        |                               # ไฟล์ <b>entrypoint</b> — แต่ละ project มีได้หลาย entrypoint แต่ละอันคือ 1 app
+        ├── microservice.py             # entrypoint แบบ FastAPI (เวอร์ชันแรก)
+        ├── consumer.py                 # entrypoint แบบ RabbitMQ (เวอร์ชันสอง) <b>(ตัวที่ใช้จริงตอนนี้)</b>
+        |
+        ├── requirements.txt            # <b>dependency</b> ของ microservice 'example'
+        └── src                         # src ของ microservice 'example'
+            ├── service                 # โฟลเดอร์ source code หลัก (logic ทั้งหมดของ service)
             │   └── train.py
-            ├── const.py                # constant for 'example' microservice
-            ├── logger.py               # import logger for logging in microservice
-            └── data                  
-                └── example_data.txt          
+            ├── const.py                # constant ของ microservice 'example'
+            ├── logger.py               # logger สำหรับ logging ใน microservice
+            └── data
+                └── example_data.txt
 </pre>
 
-## How to add new microservice
+## วิธีเพิ่ม microservice ใหม่
 
-- You can add new microservice in the `projects` directory with the structure stated [above](#project-structure)
-- You can add more library/common services that will be used in multiple microservice in `pkg` directory
-- As the project structure explained above, in the context of each project, to import modules from the `pkg` folder, you will need to have `sys.path.append('../../')` in the entrypoint files.
+- เพิ่ม microservice ใหม่ในโฟลเดอร์ `projects` ตาม structure ข้างบน
+- library/common service ที่ใช้หลาย microservice เพิ่มในโฟลเดอร์ `pkg`
+- ในบริบทของแต่ละ project การ import module จาก `pkg` ต้องมี `sys.path.append('../../')` ใน
+  ไฟล์ entrypoint
 
-## How to use microservice in production
+## วิธีเอา microservice ไปใช้ใน ML pipeline
 
-> **Current reality (2026-09):** the `ml-pipeline` consumers run on the GPU VM
-> `isel-5090`, hand-assembled, **not** from the images below — see
-> [docs/gpu-vm.md](./docs/gpu-vm.md). The in-cluster consumer Deployments are pinned to
-> `replicas: 0`. The image-build flow below still applies for the `evotune_ESM` /
-> `*-rest` images and any future move back in-cluster.
+> **สถานะตอนนี้ (2026-09):** consumer ของ `ml-pipeline` รันบน GPU VM `isel-5090` ประกอบมือ
+> **ไม่ได้**มาจาก image ข้างล่าง — ดู [docs/gpu-vm.md](./docs/gpu-vm.md) in-cluster consumer
+> Deployment ถูกตรึง `replicas: 0` flow build image ข้างล่างยังใช้กับ image `evotune_ESM` /
+> `*-rest` และถ้าย้ายกลับเข้า cluster ในอนาคต
 
-As stated at the start of this README, the purpose of this repository is to develop the microservice and put it into a `docker image` for our ML pipeline to use. (info on how to use docker image into a ML pipeline is in [_devops_ _repository_](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops))
+จุดประสงค์ของ repo นี้คือพัฒนา microservice แล้ว build เป็น `docker image` ให้ ML pipeline ใช้
+(วิธีเอา image เข้า ML pipeline อยู่ใน
+[devops repository](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops))
 
-- The context for each docker file will be at the root of the project !! So that we can also build with the code in pkg folder.
+- context ของ Dockerfile แต่ละตัวอยู่ที่ root ของ project เพื่อให้ build โค้ดในโฟลเดอร์ `pkg` ได้ด้วย
 
 ### build docker image
 
-```
+```sh
 docker build -t blast-service -f ./projects/blast/docker/microservice.Dockerfile .
 ```
 
-### build docker image and publish it to docker repository
+### build + publish ขึ้น docker repository
 
-- go to `Actions` in github
-- select `Build and Publish ML pipeline microservices` on the list of actions
-- go to `run workflow` and select whatever `microservice` you want to build
-  - select `auto deploy to devops-k8s` to automatically deploy ML pipeline when the image have been builded
+- ไปที่ `Actions` ใน github
+- เลือก `Build and Publish ML pipeline microservices`
+- `run workflow` แล้วเลือก `microservice` ที่จะ build
+  - ติ๊ก `auto deploy to devops-k8s` เพื่อ deploy ML pipeline อัตโนมัติหลัง build เสร็จ
 
-PS. you can learn more about github workflow if you have new microservice. (very convenient when deploy microservice to production environment)
+### run docker local เพื่อทดสอบ image
 
-### run docker in local to test if your docker image is working
+- เปลี่ยน port ให้ตรงกับที่ระบุใน dockerfile
 
-- change port to the specific port in dockerfile
-
-```
+```sh
 docker run -d --name blast-service -p 8080:8080 --env-file=".env" blast-service
 ```
