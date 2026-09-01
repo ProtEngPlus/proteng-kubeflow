@@ -1,15 +1,20 @@
 # Setup
 
+This file is **local development**. The live dev + production deployment runs on the GPU
+VM — see [docs/gpu-vm.md](./docs/gpu-vm.md).
+
 ## Run locally
 
 Each of the 6 microservices under `projects/` (`blast`, `evotune`, `evotune_ESM`, `fittop`, `mmseqs2`, `mutation`) is set up the same way, but every one of them has its own venv and its own quirks - see the table below before you start.
 
-1. **Env file** - each project already has `.env.local`/`.env.staging` (real CloudAMQP RabbitMQ creds, dummy GCP creds - dummy is fine, GCS calls just fail at request time). `consumer.py` loads plain `.env` (not `.env.local`), so copy it:
+1. **Env file** - each project already has `.env.local` pointing at a **local** broker (`RABBITMQ_URL=amqp://guest:guest@localhost:5672/`) with dummy/blank GCP creds. `consumer.py` loads plain `.env` (not `.env.local`), so copy it:
 
    ```sh
    cd projects/<project-name>
    cp .env.local .env
    ```
+
+   So a locally-run consumer talks to a RabbitMQ **you** run (`docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management`), isolated - it never touches the dev or production queues. It gets no jobs until you publish one yourself (`dev_tools/rabbitmq/send_job.py`). GCP creds are blank, so GCS uploads fail at request time - fine for wiring/plumbing tests.
 
    **Never commit real GCP service-account credentials to any tracked file**
 
@@ -33,17 +38,18 @@ Each of the 6 microservices under `projects/` (`blast`, `evotune`, `evotune_ESM`
    | `evotune`, `evotune_ESM`, `fittop`, `mutation` | also `pip install "setuptools<81"` - these use `jax-unirep`, which does `import pkg_resources` (part of setuptools); setuptools ≥81 dropped that module                                              |
    | `evotune_ESM`                                  | heaviest install (`torch`, `transformers`, `datasets`, `optuna`) - expect several minutes                                                                                                            |
 
-3. **Run a microservice** - each project has a `run.sh` that copies `.env.local` → `.env` (first run only) and calls the venv's `python` directly, so you never have to remember to `source .venv/Scripts/activate` first:
+3. **Run a microservice** - each project has a `run.sh` that copies `.env.local` → `.env` (first run only) and calls the venv's `python` directly, so you never have to remember to `source .venv/Scripts/activate` first. From the repo root:
 
    ```sh
-   ./run.sh
+   ./run.sh blast          # one service (or: cd projects/blast && ./run.sh)
+   ./run.sh all            # every service, each backgrounded, Ctrl-C stops all
    ```
 
    (Runs `consumer.py`, the RabbitMQ-consumer entrypoint - currently the one actually used; `microservice.py` in each project is an older FastAPI entrypoint no longer wired up. If you'd rather run it manually: `source .venv/Scripts/activate` then `python consumer.py`.)
 
    Done when: logs show `Connecting to RabbitMQ` → `Connected to RabbitMQ` → `Consuming messages`, no crash. No HTTP port - it's a plain consumer, not a server. First run can take 20-30s before anything prints (slow `jax`/ML library import), that's normal, not a hang.
 
-   Each microservice you want running is its own blocking process (own terminal/venv), same as the Go services - but you only need the one(s) relevant to what you're testing, not all 6 at once.
+   Each microservice is its own blocking process with its own venv. `./run.sh all` backgrounds all of them (skipping `evotune_ESM` - it pulls `torch`; `RUN_ESM=1 ./run.sh all` to include it), but you usually only need the one(s) relevant to what you're testing, and every venv must already exist.
 
 ## Format
 

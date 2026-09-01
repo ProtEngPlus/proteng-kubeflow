@@ -4,9 +4,10 @@ This repository is basically a place that create _**microservices docker image**
 
 PS. at first **_we_**(the first proteng students group to do this project) plan to use kubeflow for our pipeline (hence the name "kubeflow"). But later on into the project, we decided not to use it(kubeflow) and you can find more info on [_devops_ _repository_](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops)
 
-See [SETUP.md](./SETUP.md) to run a microservice locally, and [CONTRIBUTING.md](./CONTRIBUTING.md) for commit conventions and pre-commit hooks.
+See [SETUP.md](./SETUP.md) to run a microservice locally, [CONTRIBUTING.md](./CONTRIBUTING.md) for commit conventions and pre-commit hooks, and **[docs/gpu-vm.md](./docs/gpu-vm.md)** for the real deployment — the whole `ml-pipeline` (dev **and** production) runs off-cluster on a GPU VM, not from the images this repo builds. `dev_tools/` holds standalone helpers (`ncbi/` throughput test).
 
 ## Table of Contents
+
 - [Project Structure](#project-structure)
 - [How to add new microservice](#how-to-add-new-microservice)
 - [How to use microservice in ML pipeline](#how-to-use-microservice-in-production)
@@ -14,7 +15,7 @@ See [SETUP.md](./SETUP.md) to run a microservice locally, and [CONTRIBUTING.md](
 ## Project Structure
 
 This is a mono-repo project. Each project in the `projects` folder is isolated from each other (Each project is a `microservice` that will be used for ML Pipeline).
-The `pkg` folder contains the common services/files that is shared across microservices. 
+The `pkg` folder contains the common services/files that is shared across microservices.
 
 <pre>
 .
@@ -46,21 +47,31 @@ The `pkg` folder contains the common services/files that is shared across micros
 </pre>
 
 ## How to add new microservice
+
 - You can add new microservice in the `projects` directory with the structure stated [above](#project-structure)
 - You can add more library/common services that will be used in multiple microservice in `pkg` directory
 - As the project structure explained above, in the context of each project, to import modules from the `pkg` folder, you will need to have `sys.path.append('../../')` in the entrypoint files.
 
 ## How to use microservice in production
+
+> **Current reality (2026-09):** the `ml-pipeline` consumers run on the GPU VM
+> `isel-5090`, hand-assembled, **not** from the images below — see
+> [docs/gpu-vm.md](./docs/gpu-vm.md). The in-cluster consumer Deployments are pinned to
+> `replicas: 0`. The image-build flow below still applies for the `evotune_ESM` /
+> `*-rest` images and any future move back in-cluster.
+
 As stated at the start of this README, the purpose of this repository is to develop the microservice and put it into a `docker image` for our ML pipeline to use. (info on how to use docker image into a ML pipeline is in [_devops_ _repository_](https://github.com/ProtEngPlus/manual-guides-2023/tree/main/devops))
 
 - The context for each docker file will be at the root of the project !! So that we can also build with the code in pkg folder.
 
 ### build docker image
+
 ```
 docker build -t blast-service -f ./projects/blast/docker/microservice.Dockerfile .
 ```
 
 ### build docker image and publish it to docker repository
+
 - go to `Actions` in github
 - select `Build and Publish ML pipeline microservices` on the list of actions
 - go to `run workflow` and select whatever `microservice` you want to build
@@ -69,7 +80,9 @@ docker build -t blast-service -f ./projects/blast/docker/microservice.Dockerfile
 PS. you can learn more about github workflow if you have new microservice. (very convenient when deploy microservice to production environment)
 
 ### run docker in local to test if your docker image is working
+
 - change port to the specific port in dockerfile
+
 ```
 docker run -d --name blast-service -p 8080:8080 --env-file=".env" blast-service
 ```

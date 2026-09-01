@@ -1,52 +1,54 @@
+import asyncio
 import json
+import os
+import sys
 
-import pika
+import aio_pika
+
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+
+message = {
+    "job_id": "local-test-1",
+    "query_result_id": "local-test-1",
+    "input": (
+        "MLDDGNKLWYRDAIFYEVPVKSFYDSNGDGIGDFRGLTMKLGYLKNLGVDALWLLPFYKSPLKDDG"
+        "YDISDYYSILPEYGTIDDFKQFIETAHSMNIRVIADLVLNHVSDQHPWFVEARKSRDSPKRNWFIW"
+        "SDTPDKFKEARIIFIDTEKSNWAYDQESGQYYFHRFYSSQPDLNYDNPEVREEVKKIIRYWLNLGL"
+        "DGFRADAVPYLF"
+    ),
+    "config": {
+        "program": "blastp",
+        "database": "nr",
+        "expect": 10.0,
+        "hitlist_size": 50,
+        "perc_ident": 50,
+        "hsp_cov": 99,
+        "random_state": 2023,
+        "seq_length": 300,
+    },
+    "meta": ["blast", "unirep", "ridgecv", "mutation"],
+}
 
 
-def main():
-    connection = pika.BlockingConnection(
-        pika.URLParameters("amqp://admin:pass@localhost:5672/")
-    )
-    channel = connection.channel()
+async def main():
+    routing_key = sys.argv[1] if len(sys.argv) > 1 else "query.blast"
 
-    # edit queue name here
-    queue_name = "run_job.blast"
-
-    channel.exchange_declare(queue_name, durable=True)
-
-    channel.queue_declare(
-        queue=queue_name,
-        durable=True,
-    )
-    channel.queue_bind(exchange=queue_name, queue=queue_name, routing_key=queue_name)
-
-    # edit job request body here
-    message = {
-        "job_id": "204",
-        "input": "MLDDGNKLWYRDAIFYEVPVKSFYDSNGDGIGDFRGLTMKLGYLKNLGVDALWLLPFYKSPLKDDGYDISDYYSILPEYGTIDDFKQFIETAHSMNIRVIADLVLNHVSDQHPWFVEARKSRDSPKRNWFIWSDTPDKFKEARIIFIDTEKSNWAYDQESGQYYFHRFYSSQPDLNYDNPEVREEVKKIIRYWLNLGLDGFRADAVPYLFKREGTNCENLPETHNFFKEIRKMMDSEYPGTILLAEANQWPTDARAYFGNGDEFHMAFNFPLMPRIFIALAKRDYYPIEDIINQTLPVPDNCDWCTFLRNHDELTLEMVTDAERDIMFREYAKLPKMRLNLGIRRRLAPLVDNDINTIELLNALIFSLPGTPIIYYGDEIGMGDNIYLGDRNGVRTPMQWSYDRNAGFSTADSEELYSPVITNPNYNYESVNVEAEMRLNSSLLKWMIKIINIRKDYKELLGRGSIKFINQKNKRVLVYIREYENQRMLCLFNLSRSPTYVELDLHEYAGLKPIEAITKAAFPRIGDLNYFITMTPRSFFWFNLIVPERDDSFDLVDDYDQS",
-        "config": {
-            "program": "blastp",
-            "database": "nr",
-            "expect": 10.0,
-            "hitlist_size": 10000,
-            "perc_ident": 50,
-            "hsp_cov": 99,
-            "random_state": 2023,
-        },
-        "meta": ["blast", "unirep", "ridgecv", "mutation"],
-    }
-
-    message = json.dumps(message)
-    channel.basic_publish(
-        exchange=queue_name,
-        routing_key=queue_name,
-        body=message,
-        properties=pika.BasicProperties(content_type="text/plain", delivery_mode=2),
-    )
-    print(f"[x] Sent '{message}'")
-
-    connection.close()
+    connection = await aio_pika.connect_robust(RABBITMQ_URL)
+    async with connection:
+        channel = await connection.channel()
+        exchange = await channel.declare_exchange(
+            "logs_topic", aio_pika.ExchangeType.TOPIC
+        )
+        await exchange.publish(
+            aio_pika.Message(
+                body=json.dumps(message).encode(),
+                content_type="text/plain",
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            ),
+            routing_key=routing_key,
+        )
+        print(f"[x] sent job '{message['job_id']}' to routing key '{routing_key}'")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
