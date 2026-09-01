@@ -62,29 +62,29 @@
 
 **service → host → port**
 
-| service | host | dev port | prod port | หมายเหตุ |
-| --- | --- | --- | --- | --- |
-| nginx-proxy | old VM (host Docker) | :80 → redirect 443, :443 | เหมือนกัน | TLS term, route ตาม hostname |
-| protengplus-web (frontend) | old VM MicroK8s | NodePort 30001 | NodePort 31001 | |
-| proteng-bff | old VM MicroK8s | NodePort 30080 | NodePort 31080 | back `doc.protengplus.com` ด้วย |
-| proteng-user-mgmt | old VM MicroK8s | NodePort 30081 | NodePort 31081 | |
-| proteng-conductor | old VM MicroK8s | NodePort 30082 | NodePort 31082 | publish job ไป RabbitMQ ต่อ stage |
-| RabbitMQ AMQP (`rabbitmq-svc`) | old VM MicroK8s | **NodePort 30673** | **NodePort 31673** | overlay เพิ่มให้ _เฉพาะ_ tunnel ของ GPU VM — อย่าเอาออก |
-| RabbitMQ mgmt UI | old VM MicroK8s | NodePort 30072 | NodePort 31072 | |
-| Argo CD | old VM MicroK8s | NodePort 30098 (`argocd.protengplus.com`) | — | |
-| MongoDB | old VM (host Docker) | :27017 | container เดียวกัน | ไม่อยู่ใน k8s; consumer ที่นี่ **ไม่แตะ** (conductor เป็นเจ้าของ Mongo) |
-| `ml-{blast,mmseqs2,evotune,fittop,mutation}` consumer | **GPU VM** | `~/proteng-gpu/apps/` | `~/proteng-gpu/apps-prod/` | ไม่มี inbound port; outbound AMQP + HTTPS เท่านั้น |
-| `evotune_ESM` | GPU VM (dev เท่านั้น) | `~/proteng-gpu/apps/evotune_ESM` | — | ไม่มี k8s manifest ไม่มี stage `esm` ใน conductor — POC |
-| `ml-*` consumer Deployment | old VM MicroK8s | **replicas 0** | **replicas 0** | served จาก GPU VM |
-| `ml-*-rest` (5 FastAPI) | old VM MicroK8s | ClusterIP :8080 | ClusterIP :8080 | vestigial — conductor เป็น AMQP 100% |
+| service                                               | host                  | dev port                                  | prod port                  | หมายเหตุ                                                                |
+| ----------------------------------------------------- | --------------------- | ----------------------------------------- | -------------------------- | ----------------------------------------------------------------------- |
+| nginx-proxy                                           | old VM (host Docker)  | :80 → redirect 443, :443                  | เหมือนกัน                  | TLS term, route ตาม hostname                                            |
+| protengplus-web (frontend)                            | old VM MicroK8s       | NodePort 30001                            | NodePort 31001             |                                                                         |
+| proteng-bff                                           | old VM MicroK8s       | NodePort 30080                            | NodePort 31080             | back `doc.protengplus.com` ด้วย                                         |
+| proteng-user-mgmt                                     | old VM MicroK8s       | NodePort 30081                            | NodePort 31081             |                                                                         |
+| proteng-conductor                                     | old VM MicroK8s       | NodePort 30082                            | NodePort 31082             | publish job ไป RabbitMQ ต่อ stage                                       |
+| RabbitMQ AMQP (`rabbitmq-svc`)                        | old VM MicroK8s       | **NodePort 30673**                        | **NodePort 31673**         | overlay เพิ่มให้ _เฉพาะ_ tunnel ของ GPU VM — อย่าเอาออก                 |
+| RabbitMQ mgmt UI                                      | old VM MicroK8s       | NodePort 30072                            | NodePort 31072             |                                                                         |
+| Argo CD                                               | old VM MicroK8s       | NodePort 30098 (`argocd.protengplus.com`) | —                          |                                                                         |
+| MongoDB                                               | old VM (host Docker)  | :27017                                    | container เดียวกัน         | ไม่อยู่ใน k8s; consumer ที่นี่ **ไม่แตะ** (conductor เป็นเจ้าของ Mongo) |
+| `ml-{blast,mmseqs2,evotune,fittop,mutation}` consumer | **GPU VM**            | `~/proteng-gpu/apps/`                     | `~/proteng-gpu/apps-prod/` | ไม่มี inbound port; outbound AMQP + HTTPS เท่านั้น                      |
+| `evotune_ESM`                                         | GPU VM (dev เท่านั้น) | `~/proteng-gpu/apps/evotune_ESM`          | —                          | ไม่มี k8s manifest ไม่มี stage `esm` ใน conductor — POC                 |
+| `ml-*` consumer Deployment                            | old VM MicroK8s       | **replicas 0**                            | **replicas 0**             | served จาก GPU VM                                                       |
+| `ml-*-rest` (5 FastAPI)                               | old VM MicroK8s       | ClusterIP :8080                           | ClusterIP :8080            | vestigial — conductor เป็น AMQP 100%                                    |
 
 **GPU VM outbound (ทางเดียวที่ออกจากเครื่องนี้ได้)**
 
-| จาก (GPU VM) | ผ่าน | ไป (old VM) | เพื่ออะไร |
-| --- | --- | --- | --- |
-| `localhost:5672` | `tunnels/rabbitmq.sh` (`ssh -L`) | `:30673` → `rabbitmq-svc` (default ns) | dev consumer: รับ job / publish ผล |
-| `localhost:5673` | `tunnels/rabbitmq-prod.sh` | `:31673` → `rabbitmq-svc` (production ns) | prod consumer |
-| `localhost:18888` | `tunnels/proxy.sh` | forward proxy → internet | NCBI BLAST, GCS (upload ผลของทุก consumer) |
+| จาก (GPU VM)      | ผ่าน                             | ไป (old VM)                               | เพื่ออะไร                                  |
+| ----------------- | -------------------------------- | ----------------------------------------- | ------------------------------------------ |
+| `localhost:5672`  | `tunnels/rabbitmq.sh` (`ssh -L`) | `:30673` → `rabbitmq-svc` (default ns)    | dev consumer: รับ job / publish ผล         |
+| `localhost:5673`  | `tunnels/rabbitmq-prod.sh`       | `:31673` → `rabbitmq-svc` (production ns) | prod consumer                              |
+| `localhost:18888` | `tunnels/proxy.sh`               | forward proxy → internet                  | NCBI BLAST, GCS (upload ผลของทุก consumer) |
 
 tunnel มีเพราะ firewall ของ cloud project ฝั่ง GPU VM allowlist เฉพาะ port ที่มีอยู่เดิม (`30072`
 ผ่าน `30673`/`31673` ไม่ผ่าน) และเราเปลี่ยนไม่ได้ tunnel แต่ละเส้นเป็น `ssh -N` ของตัวเองใน wrapper
@@ -113,7 +113,7 @@ consumer.log
 - **venv ต่อ service บังคับ** — dependency ชนกันจริง: `blast`/`mmseqs2` ต้องการ
   `pymongo==3.13.0`; `evotune`/`mutation` ต้องการ `pymongo==4.10.1`; `fittop` pin
   `scikit-learn==1.2.2`; `evotune_ESM` ต้องการ `torch==2.10.0+cu128` (`2.11`'s `nvidia-nccl`
-  pin ไม่ publish — ดู `weekly-reports/20260828.md` §13 และ recipe offline-pip ใน project notes)
+  pin ไม่ publish — ดู `/resources-2026/weekly-reports/20260828.md` §13 และ recipe offline-pip ใน project notes)
 - **`mmseqs2` เพิ่มเติม**: binary `mmseqs` อยู่ที่ `~/local/bin/mmseqs` (**ไม่**อยู่บน PATH ของ
   cron — wrapper จัดการ) แต่ละ `mmseqs2` dir ถือ `uniprot_sprot.fasta` ของตัวเอง (~286 MB)
 - consumer **ไม่ใช้ MongoDB** — คุยแค่ RabbitMQ + GCS (+ NCBI สำหรับ blast) `.env` ต้องมี
@@ -126,14 +126,14 @@ consumer แต่ละตัว declare topic exchange `logs_topic`, queue แ
 `exclusive` แปลว่า **มี consumer ได้ตัวเดียวต่อ queue** — pod ใน cluster กับ consumer บน GPU VM
 ถือพร้อมกันไม่ได้ ตัวที่แพ้จะวน `RESOURCE_LOCKED`
 
-| service | queue | binding key |
-| --- | --- | --- |
-| blast | `blast_queue` | `query.blast` |
-| mmseqs2 | `mmseqs2_queue` | `query.mmseqs2` |
-| evotune | `evotune_queue` | `evotune.unirep` |
-| fittop | `fittop_queue` | `fittop.ridgecv` |
-| mutation | `mutation_queue` | `mutation.mutation` |
-| evotune_ESM (dev) | `evotune_ESM_queue` | `evotune.ESM` |
+| service           | queue               | binding key         |
+| ----------------- | ------------------- | ------------------- |
+| blast             | `blast_queue`       | `query.blast`       |
+| mmseqs2           | `mmseqs2_queue`     | `query.mmseqs2`     |
+| evotune           | `evotune_queue`     | `evotune.unirep`    |
+| fittop            | `fittop_queue`      | `fittop.ridgecv`    |
+| mutation          | `mutation_queue`    | `mutation.mutation` |
+| evotune_ESM (dev) | `evotune_ESM_queue` | `evotune.ESM`       |
 
 ---
 
@@ -154,12 +154,12 @@ consumer แต่ละตัว declare topic exchange `logs_topic`, queue แ
 
 ### `~/proteng-gpu/bin/`
 
-| script | ทำอะไร |
-| --- | --- |
-| `start-all.sh` | start tunnel 3 เส้น + supervisor ของทุก `apps/*` และ `apps-prod/*` idempotent (ข้ามตัวที่รันอยู่) |
-| `stop-all.sh [all\|dev\|prod]` | kill supervisor แล้วตามด้วย child `consumer.py` (match ด้วย `/proc/<pid>/cwd` เพราะ argv เป็น relative `./venv/bin/python consumer.py`) `prod` หยุด tunnel prod ด้วย |
-| `status-all.sh` | tunnel (process + socket), consumer แต่ละตัว (supervisor pid, child pid, log age), บรรทัด log ล่าสุด |
-| `healthcheck.sh` | cron `*/5` — restart supervisor ที่ตาย, probe AMQP socket ทั้งสอง, และ POST หนึ่งบรรทัดไป `WEBHOOK_URL` (ใน `~/proteng-gpu/.env`) ตอน **state เปลี่ยน** log ไป `~/proteng-gpu/logs/healthcheck.log` |
+| script                         | ทำอะไร                                                                                                                                                                                              |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start-all.sh`                 | start tunnel 3 เส้น + supervisor ของทุก `apps/*` และ `apps-prod/*` idempotent (ข้ามตัวที่รันอยู่)                                                                                                   |
+| `stop-all.sh [all\|dev\|prod]` | kill supervisor แล้วตามด้วย child `consumer.py` (match ด้วย `/proc/<pid>/cwd` เพราะ argv เป็น relative `./venv/bin/python consumer.py`) `prod` หยุด tunnel prod ด้วย                                |
+| `status-all.sh`                | tunnel (process + socket), consumer แต่ละตัว (supervisor pid, child pid, log age), บรรทัด log ล่าสุด                                                                                                |
+| `healthcheck.sh`               | cron `*/5` — restart supervisor ที่ตาย, probe AMQP socket ทั้งสอง, และ POST หนึ่งบรรทัดไป `WEBHOOK_URL` (ใน `~/proteng-gpu/.env`) ตอน **state เปลี่ยน** log ไป `~/proteng-gpu/logs/healthcheck.log` |
 
 ### crontab (`crontab -l`)
 
@@ -281,5 +281,5 @@ Backlog: `run_blast.py` ควรตั้ง `NCBIWWW.email` / `NCBIWWW.tool` (
 ## Related
 
 - [`dev_tools/ncbi/README.md`](../dev_tools/ncbi/README.md) — test เดียวกัน เขียนละเอียด
-- `manual-guides-2023/weekly-reports/20260904.md` §15 — production cutover + incident ที่ทำให้
+- `proteng-manual-guides/resources-2026/weekly-reports/20260904.md` §15 — production cutover + incident ที่ทำให้
   เกิด warning ส่วนใหญ่ข้างบน; §9 — ผล throughput
