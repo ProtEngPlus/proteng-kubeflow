@@ -11,3 +11,5 @@ blast_result*
 tmp/
 creds.json
 **/__pycache__/
+/dev_tools/fake-gcs/data/*/*
+!/dev_tools/fake-gcs/data/*/.gitkeep

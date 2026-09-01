@@ -1,0 +1,20 @@
+# Local-only GCS emulator for exercising the ML pipeline end to end.
+# See ../../SETUP.md -> "Full pipeline locally".
+#
+# fake-gcs-server reads ./data at startup and turns every top-level directory
+# into a bucket, so the four pipeline buckets exist with no API call. Objects the
+# consumers write are kept in memory - they are gone on `down`, nothing is
+# written back into ./data (the .gitignore rule for it is just a safety net).
+#
+#   docker compose -f dev_tools/fake-gcs/compose.yaml up -d
+#   docker compose -f dev_tools/fake-gcs/compose.yaml down     # also clears all objects
+
+services:
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    container_name: fake-gcs
+    ports:
+      - "4443:4443"
+    volumes:
+      - ./data:/data
+    command: ["-scheme", "http", "-public-host", "localhost:4443"]

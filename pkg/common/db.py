@@ -35,9 +35,18 @@ def downloadFromBucket(bucketName, fileName):
 
 
 def getStorageClient():
-    pk = os.environ.get("PRIVATE_KEY").replace(
+    if os.environ.get("STORAGE_EMULATOR_HOST"):
+        return storage.Client()
+
+    pk = (os.environ.get("PRIVATE_KEY") or "").replace(
         "\\n", "\n"
     )  # replace the escaped newline character
+    if not pk:
+        raise RuntimeError(
+            "PRIVATE_KEY is not set - fill the GCP service-account block in .env "
+            "for real GCS, or set STORAGE_EMULATOR_HOST to use a local "
+            "fake-gcs-server (see SETUP.md)"
+        )
     creds = {
         "type": "service_account",
         "project_id": os.environ.get("PROJECT_ID"),
