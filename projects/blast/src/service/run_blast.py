@@ -96,27 +96,16 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         filtered_df = df[
             (df["query_cover"] > hsp_cov) & (df["length"] < seq_length)
         ].dropna(subset=["query_cover"])
-        isEmpty = False
-        # Check if filtered_df is empty and log or return an empty list if true
         if filtered_df.empty:
-            logger.info("No rows match the filter conditions, returning empty list.")
+            logger.warning(
+                f"job id {jobId}: no hits with query_cover>{hsp_cov} and "
+                f"length<{seq_length}; falling back to the cover filter only"
+            )
             filtered_df = df[(df["query_cover"] > hsp_cov)].dropna(
                 subset=["query_cover"]
             )
-            isEmpty = True
 
-        query_result = filtered_df.to_dict(orient="records")
-
-        query_resultJson = filtered_df.to_json(orient="split")
-        results = {"query_results": query_resultJson, "randomState": randomState}
-        resultsJson = json.dumps(results)
-
-        logger.info(f"job id {jobId}: Uploading results to object storage")
-        # Upload the JSON string directly to the object storage bucket
-        upload_status = uploadToBucket("similar_protein", jobId, resultsJson)
-        logger.info(f"job id {jobId}: Upload status: {upload_status}")
-
-        if isEmpty:
+        if filtered_df.empty:
             logger.error(f"job id {jobId}: error run blast: No sequence found")
             message = JobStatusEventMessage(
                 service_name="blast-microservice",
@@ -132,6 +121,16 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
             publishJobStatusEvent(message)
             logger.info(f"Job {jobId} failed")
             return
+
+        query_result = filtered_df.to_dict(orient="records")
+
+        query_resultJson = filtered_df.to_json(orient="split")
+        results = {"query_results": query_resultJson, "randomState": randomState}
+        resultsJson = json.dumps(results)
+
+        logger.info(f"job id {jobId}: Uploading results to object storage")
+        upload_status = uploadToBucket("similar_protein", jobId, resultsJson)
+        logger.info(f"job id {jobId}: Upload status: {upload_status}")
 
         message = JobStatusEventMessage(
             service_name="blast-microservice",
