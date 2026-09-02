@@ -1,60 +1,66 @@
 # NCBI BLAST throughput test
 
-`ncbi_throughput_test.py` runs N `NCBIWWW.qblast` calls back-to-back and records
-how long each one takes. Point: get a real latency distribution for BLAST-via-NCBI
-(seen anywhere from ~1 min to 45+ min for the same query) instead of an anecdote.
+`ncbi_throughput_test.py` เรียก `NCBIWWW.qblast` ต่อเนื่อง N ครั้ง แล้วบันทึกเวลาที่แต่ละครั้งใช้
+จุดประสงค์: ได้ latency distribution จริงของ BLAST-ผ่าน-NCBI (query เดียวกันเคยเห็นตั้งแต่ ~1 นาที
+ถึง 45+ นาที) แทนที่จะอ้างลอย ๆ
 
-Same effective call as the blast service (`projects/blast/src/service/run_blast.py`):
-`blastp` / `nr`, `expect=10.0`, `hitlist_size=50`, socket timeout 180 s. Nothing
-from the pipeline is imported (no RabbitMQ, no consumer, no GCS), so the numbers
-are NCBI's latency only.
+เรียกแบบเดียวกับ blast service (`projects/blast/src/service/run_blast.py`): `blastp` / `nr`,
+`expect=10.0`, `hitlist_size=50`, socket timeout 180 วิ ไม่ได้ import อะไรจาก pipeline
+(ไม่มี RabbitMQ / consumer / GCS) ตัวเลขที่ได้จึงเป็นเวลาของ NCBI ล้วน ๆ
 
 ## Run
 
-```sh
-export NCBI_EMAIL="you@example.com"
-python ncbi_throughput_test.py --trials 15 --outfile results.csv
-```
-
-- Needs `biopython` and network access to NCBI. Run it wherever the blast service
-  runs, using that service's Python and network path, so the measurement matches
-  production.
-- Long: 15 trials x (1-45 min). Use `nohup ... &` and walk away.
-- Watch progress in the **CSV** (`cat results.csv`) — it is flushed per trial. The
-  stdout log is block-buffered when redirected to a file, so it only fills in when
-  the run ends (or pass `python -u` to unbuffer it).
-- An interrupted run keeps its CSV rows — just run again to add more.
-- Don't run it alongside a real BLAST job; two request streams from one IP can
-  trip NCBI's rate limit.
-
-## Output
-
-- `results.csv` — one row per trial: `trial,start_utc,duration_s,status,hits,error`
-- stdout — a line per trial, then `min / max / mean / median` of the OK trials.
-
-## Running it on the GPU VM (`isel-5090`)
-
-The VM has no checkout of this repo — services live at `~/proteng-gpu/apps/<name>/`
-with their own `venv/`. Copy the script in (terminal paste breaks the file — use
-`scp`, or `base64 -w0` on one side and `base64 -d` on the other, then check
-`md5sum`). Then:
+ต้องรันบนเครื่อง + เส้น network เดียวกับ blast service เสมอ ผลถึงจะตรง production
+VM ไม่มี checkout repo — copy `ncbi_throughput_test.py` เข้าไปที่ `~/proteng-gpu/apps/blast/` ก่อน
+(อย่า paste ผ่าน terminal ไฟล์จะเพี้ยน — ใช้ `scp` หรือ `base64 -w0` / `base64 -d` แล้วเทียบ `md5sum`)
 
 ```sh
 cd ~/proteng-gpu/apps/blast
 export HTTP_PROXY=http://localhost:18888 HTTPS_PROXY=http://localhost:18888
-export NCBI_EMAIL="you@example.com"
+export NCBI_EMAIL="you@example.com" # อีเมลจริง
+
+# รันเดียว 15 ครั้ง
 nohup venv/bin/python -u ncbi_throughput_test.py \
     --trials 15 --outfile ~/ncbi_throughput.csv > ~/ncbi_throughput.log 2>&1 &
-watch -n 30 cat ~/ncbi_throughput.csv    # or just: cat ~/ncbi_throughput.csv
 ```
 
-`localhost:18888` is the SSH-tunnel HTTP proxy the consumers use. Biopython there
-is 1.81 — `NCBIWWW.email` / `.tool` may be a no-op (added in 1.82); harmless, and
-it doesn't affect the timings.
+`localhost:18888` = HTTP proxy ผ่าน SSH tunnel เส้นเดียวกับที่ consumer ใช้
 
-## Notes
+#### ถ้าอยากกระจายหลายช่วงเวลา...
 
-- Biopython's `qblast` rate-limits itself (poll delay starts at 20 s, rises to
-  60 s against the public NCBI host), so sequential calls need no extra throttle.
-- `run_blast.py` never sets `NCBIWWW.email` / `NCBIWWW.tool`. Setting both there
-  is a cheap NCBI-usage-policy fix worth doing.
+เวลา BLAST ขึ้นกับ time-of-day (peak US ช้ากว่า off-peak ชัด) การเก็บ 50 ครั้งรวดในหน้าต่างเดียว
+ไม่ได้ดีกว่า 15 มากนัก — ควรกระจายช่วงเวลาแทน ใช้ `run_throughput_batches.sh` (copy เข้า VM คู่กับ
+`ncbi_throughput_test.py`):
+
+```sh
+cd ~/proteng-gpu/apps/blast
+export HTTP_PROXY=http://localhost:18888 HTTPS_PROXY=http://localhost:18888
+export NCBI_EMAIL="you@example.com" # อีเมลจริง
+chmod +x run_throughput_batches.sh
+nohup ./run_throughput_batches.sh > ~/ncbi_throughput.log 2>&1 &
+```
+
+`run_throughput_batches.sh` default: 3 batch x 10 ครั้ง ห่างกัน 6 ชม.
+
+## Output
+
+```sh
+cat ~/ncbi_throughput.csv
+```
+
+```sh
+tail ~/ncbi_throughput.log
+```
+
+- ผลลัพธ์เป็น `ncbi_throughput.csv` — 1 แถวต่อ trial: `trial,start_utc,duration_s,status,hits,error`
+- **ห้ามรันพร้อม BLAST job production จริง** — 2 request stream จาก IP เดียวเสี่ยงโดน NCBI rate limit
+- ถ้า proxy tunnel หลุดระหว่างรัน batch นั้น fail (CSV บันทึก `status=fail`) — เช็ค `tail log` ด้วย
+
+## หมายเหตุ
+
+- `qblast` ของ Biopython throttle ตัวเองอยู่แล้ว (poll delay เริ่ม 20 วิ เพิ่มเป็น 60 วิ กับ host
+  สาธารณะของ NCBI) เรียกแบบ sequential จึงไม่ต้องเพิ่ม throttle เอง
+- Biopython 1.81 (ที่ติดตั้งบน VM) รองรับ `NCBIWWW.email` / `NCBIWWW.tool` แล้ว — script ตั้งให้
+  พารามิเตอร์ทั้งสองถูกส่งไป NCBI จริงเมื่อยิง host สาธารณะ
+- `run_blast.py` (production) **ยังไม่ได้ตั้ง** `NCBIWWW.email` / `NCBIWWW.tool` — เป็น NCBI-usage-policy
+  fix ที่ควรทำ (bug B4)
