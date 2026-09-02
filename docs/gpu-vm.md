@@ -247,39 +247,16 @@ fail dev กลับ ทำ step เดียวกันแบบ `dev`
 
 ## NCBI BLAST throughput test
 
-`dev_tools/ncbi/ncbi_throughput_test.py` เรียก `NCBIWWW.qblast()` ติด ๆ กัน N ครั้งแล้วจดเวลา
-แต่ละครั้ง — latency distribution จริงของ BLAST-via-NCBI (เจอ 4 นาที ถึง 40+ นาที สำหรับ query
-เดียวกัน ดู `20260904.md` §9) ไม่ import อะไรจาก pipeline (ไม่มี RabbitMQ ไม่มี GCS) ตัวเลขเลยเป็น
-latency ของ NCBI ล้วน ๆ
+helper วัด latency ของ BLAST-via-NCBI ล้วน ๆ (`NCBIWWW.qblast()` ไม่แตะ pipeline) — query เดียวกัน
+**วิธีรันอยู่ที่ [`dev_tools/ncbi/README.md`](../dev_tools/ncbi/README.md)**
 
-script อยู่บน VM แล้วที่ `~/proteng-gpu/apps/blast/ncbi_throughput_test.py` (จงใจไม่เอาไว้ใน
-service dir — เป็น helper) ถ้าจะ transfer ใหม่ `base64 -w0` ฝั่งนึง / `base64 -d` อีกฝั่ง verify
-`md5sum` (paste ใน terminal ทำไฟล์เสีย)
+เฉพาะบริบท GPU VM:
 
-```sh
-cd ~/proteng-gpu/apps/blast
-export HTTP_PROXY=http://localhost:18888 HTTPS_PROXY=http://localhost:18888
-export NCBI_EMAIL="you@example.com"
-nohup ./venv/bin/python -u ncbi_throughput_test.py \
-    --trials 15 --outfile ~/ncbi_throughput_$(date +%Y%m%d).csv \
-    > ~/ncbi_throughput_$(date +%Y%m%d).log 2>&1 &
-
-watch -n 30 cat ~/ncbi_throughput_*.csv
-```
-
-- นาน — 15 trial × (4–40 นาที) `nohup … &` แล้วเดินไปทำอย่างอื่น
-- **`--outfile` ใหม่ทุกรอบ** จะได้ไม่ append ทับ dataset เก่า
-- มัน share outbound path (`localhost:18888` → proxy VM เก่า → NCBI ออกที่ IP ของ VM เก่า) กับ
-  `blast` consumer ที่รันอยู่ — ทั้ง dev _และ_ prod รันตอน `blast_queue` ว่าง หรือยอมรับว่ามันวัด
-  throughput ตอนมี load พร้อมกัน (biopython `qblast` self-throttle ต่อ process; 2–3 stream
-  พร้อมกันจาก IP เดียวยังชน rate limit ของ NCBI ได้)
-- CSV column: `trial,start_utc,duration_s,status,hits,error` stdout พิมพ์บรรทัดต่อ trial แล้วตาม
-  ด้วย `min / max / mean / median` ของ trial ที่ OK
-
-Backlog: `run_blast.py` ควรตั้ง `NCBIWWW.email` / `NCBIWWW.tool` (NCBI etiquette) — ตอนนี้ยังไม่ตั้ง
+- script อยู่บน VM แล้วที่ `~/proteng-gpu/apps/blast/ncbi_throughput_test.py` (helper — จงใจไม่ไว้ใน service dir); transfer ใหม่ใช้ `scp` หรือ `base64` + เทียบ `md5sum` (paste ผ่าน terminal ไฟล์เพี้ยน)
+- ยิงออก path เดียวกับ `blast` consumer (`localhost:18888` → proxy VM เก่า → NCBI ที่ IP VM เก่า) — **อย่ารันพร้อม prod blast job** (2–3 stream จาก IP เดียวชน rate limit NCBI)
 
 ## Related
 
-- [`dev_tools/ncbi/README.md`](../dev_tools/ncbi/README.md) — test เดียวกัน เขียนละเอียด
-- `proteng-manual-guides/resources-2026/weekly-reports/20260904.md` §15 — production cutover + incident ที่ทำให้
-  เกิด warning ส่วนใหญ่ข้างบน; §9 — ผล throughput
+- [`dev_tools/ncbi/README.md`](../dev_tools/ncbi/README.md) — วิธีรัน throughput test
+- [`manual-guides-2023/resources-2026/notes/ncbi-usage.md`](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/resources-2026/notes/ncbi-usage.md) — ระบบแตะ NCBI ตรงไหน, พารามิเตอร์, rate limit, ผล throughput
+- `manual-guides-2023/resources-2026/weekly-reports/20260904.md` §15 — production cutover + incident; §9 — ผล throughput

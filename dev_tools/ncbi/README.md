@@ -64,3 +64,9 @@ tail ~/ncbi_throughput.log
   พารามิเตอร์ทั้งสองถูกส่งไป NCBI จริงเมื่อยิง host สาธารณะ
 - `run_blast.py` (production) **ยังไม่ได้ตั้ง** `NCBIWWW.email` / `NCBIWWW.tool` — เป็น NCBI-usage-policy
   fix ที่ควรทำ (bug B4)
+
+## Related
+
+- [`manual-guides-2023/resources-2026/notes/ncbi-usage.md`](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/resources-2026/notes/ncbi-usage.md)
+  — ระบบแตะ NCBI ตรงไหน, พารามิเตอร์ที่ส่ง, rate limit, ผล throughput ที่วัดแล้ว
+- `docs/gpu-vm.md` §NCBI BLAST throughput test — บริบท GPU VM (path บนเครื่อง, แชร์ proxy กับ consumer)
