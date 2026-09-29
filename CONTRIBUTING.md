@@ -1,20 +1,22 @@
 # Contributing
 
-กติกา commit message / branch / PR กับวิธีติดตั้ง pre-commit ของทุก repo ProtEngPlus เขียนรวมไว้ที่
-[manual-guides-2023/CONTRIBUTING.md](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/CONTRIBUTING.md)
-repo นี้เก็บแค่ hook เฉพาะของตัวเอง
+กติกาเรื่อง branch, commit message, PR และ docs ของทุก repo อยู่ที่ [CONTRIBUTING.md ของ hub](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/CONTRIBUTING.md) หน้านี้มีเฉพาะเรื่องของ proteng-kubeflow
 
-## Pre-commit hooks
+- แตก branch จาก `dev` และเปิด PR เข้า `dev`
+- รัน `make check` ก่อน push ทุกครั้ง คำสั่งนี้ตรวจแบบเดียวกับ CI คือ `black --check`, `ruff check` และ `bash -n` กับ script
+- repo นี้เป็น public ห้ามใส่ credential และรายละเอียดของเครื่องที่ใช้ deploy
+- การ merge ไม่ได้ทำให้โค้ดขึ้น GPU VM ต้องเอาขึ้นเองตาม [how-to/deploy-ml-service.md](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/how-to/deploy-ml-service.md) ของ hub
 
-- **pre-commit / pre-push**: `black` (format) + `ruff --fix` (lint) กับไฟล์ Python ที่ staged
-- **commit-msg**: ปฏิเสธ commit message ที่ผิดฟอร์แมต Conventional Commits
+## hook
 
-`black --check` + `ruff check` (ไม่ autofix) รันใน CI (`.github/workflows/test-build-dev.yaml`) ทุก
-push ด้วย CI ลง `black` / `ruff` เวอร์ชันเดียวกับ `.pre-commit-config.yaml` เป๊ะ — bump ตัวไหน bump
-ทั้งคู่ ไม่งั้น local กับ CI เห็นไม่ตรงกัน `ruff.toml` ตั้ง `select` ชัดเจนไว้กันกฎเลื่อนตามเวอร์ชัน
+`make setup` ติดตั้ง hook ให้ด้วย pre-commit
 
-`ruff` จับมากกว่าแค่เรื่อง format เช่น blind `except Exception:`, `datetime.now()` แบบไม่มี tz,
-raise/except ที่ไม่จำเป็น พวกนี้ต้องใช้วิจารณญาณต่อจุด `ruff check --fix .` ไม่แตะให้ (ดู ignore list
-ใน [ruff.toml](./ruff.toml))
+| ตอน | hook |
+| --- | --- |
+| commit และ push | `black` จัด format และ `ruff --fix` แก้ปัญหาที่แก้เองได้ กับไฟล์ Python ที่ staged |
+| เขียน commit message | ปฏิเสธ message ที่ไม่ตรงกับ Conventional Commits |
 
-รันมือทั้งหมด: `pre-commit run --all-files`
+- CI ใช้ `black==25.1.0` และ `ruff==0.16.5` ซึ่งตรงกับ `.pre-commit-config.yaml` ถ้าจะเปลี่ยน version ต้องเปลี่ยนทั้งสองที่พร้อมกัน ไม่อย่างนั้นผลในเครื่องกับใน CI จะไม่ตรงกัน
+- `ruff.toml` ระบุกฎที่ใช้ไว้ชัดเจนใน `select` กฎจึงไม่เปลี่ยนเองเมื่ออัปเดต ruff
+- ruff จับเรื่องที่มากกว่า format เช่น `except Exception:` แบบกว้าง, `datetime.now()` ที่ไม่มี timezone และ raise หรือ except ที่ไม่จำเป็น เรื่องเหล่านี้ `ruff check --fix` ไม่แก้ให้ ต้องตัดสินใจเองทีละจุด ดูรายการที่ ignore ไว้ใน [ruff.toml](./ruff.toml)
+- ถ้า hook แก้ไฟล์ให้ระหว่าง commit ให้ `git add` ไฟล์นั้นซ้ำแล้ว commit อีกครั้ง

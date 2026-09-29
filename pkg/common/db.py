@@ -45,7 +45,7 @@ def getStorageClient():
         raise RuntimeError(
             "PRIVATE_KEY is not set - fill the GCP service-account block in .env "
             "for real GCS, or set STORAGE_EMULATOR_HOST to use a local "
-            "fake-gcs-server (see SETUP.md)"
+            "fake-gcs-server (run `make env-local-gcs` in the repo root)"
         )
     creds = {
         "type": "service_account",

@@ -1,48 +1,37 @@
-# fake-gcs (local only)
+# fake-gcs (ใช้ในเครื่องเท่านั้น)
 
-[fake-gcs-server](https://github.com/fsouza/fake-gcs-server) local ให้ ML pipeline รัน
-end-to-end บน laptop ได้โดยไม่ต้องมี Google Cloud Storage credential จริง **dev กับ production
-ไม่ใช้** — สองอันนั้นตั้ง credential จริงและปล่อย `STORAGE_EMULATOR_HOST` ว่างไว้
+[fake-gcs-server](https://github.com/fsouza/fake-gcs-server) จำลอง Google Cloud Storage ในเครื่อง ML service จึงรัน pipeline ได้จนจบโดยไม่ต้องมี credential ของ GCP dev และ production ไม่ได้ใช้ตัวนี้ และต้องไม่ตั้ง `STORAGE_EMULATOR_HOST`
 
-## Start / stop
+## เปิดและปิด
 
-```sh
-docker compose -f dev_tools/fake-gcs/compose.yaml up -d
-docker compose -f dev_tools/fake-gcs/compose.yaml down
-```
+ปกติ fake-gcs ถูกเปิดพร้อม RabbitMQ และ MongoDB ด้วย `make infra-up` ของ manual-guides-2023 ถ้าจะเปิดแยก ให้ใช้ `make gcs-up` และ `make gcs-down` ที่ root ของ repo นี้
 
-แล้วตั้งค่านี้ในแต่ละ `projects/<svc>/.env` ที่จะรันกับมัน (และ **restart** consumer — `.env`
-อ่านครั้งเดียวตอน startup):
+จากนั้นชี้ service ทุกตัวไปที่ emulator ด้วย `make env-local-gcs` ซึ่งตั้งค่านี้ใน `projects/<svc>/.env` แล้ว restart service ที่รันอยู่ เพราะ `.env` ถูกอ่านแค่ตอนเริ่ม
 
-```
+```text
 STORAGE_EMULATOR_HOST=http://localhost:4443
 ```
 
-`4443` เป็น default port ของ fake-gcs-server เอง `-p 4443:4443` แค่ publish ออกมา library
-`google-cloud-storage` อ่าน `STORAGE_EMULATOR_HOST` เองแล้ว route request ทุกอันไปที่นั่นแทน
-`storage.googleapis.com`
+`4443` เป็น port default ของ fake-gcs-server library `google-cloud-storage` อ่าน `STORAGE_EMULATOR_HOST` เองแล้วส่ง request ทั้งหมดไปที่นั่นแทน `storage.googleapis.com`
 
-## Buckets
+## bucket
 
-fake-gcs-server เปลี่ยนทุก top-level directory ใต้ `data/` เป็น bucket ตอน startup bucket ทั้ง 4
-ของ pipeline เลยมีอยู่แล้ว:
+ตอนเริ่ม fake-gcs-server จะเปลี่ยนทุก directory ชั้นแรกใต้ `data/` ให้เป็น bucket bucket ทั้ง 4 ที่ pipeline ใช้จึงมีอยู่แล้วโดยไม่ต้องสร้างเอง
 
 | bucket | เขียนโดย | อ่านโดย |
 | --- | --- | --- |
-| `similar_protein` | `blast` / `mmseqs2` (query stage) | `evotune` |
-| `unirep` | `evotune` | `fittop`, `mutation` |
+| `similar_protein` | `blast` หรือ `mmseqs2` (stage query) | `evotune` |
+| `unirep` | `evotune` | `fittop` และ `mutation` |
 | `ridgecv` | `fittop` | `mutation` |
-| `mutation` | `mutation` (artifact สุดท้าย) | ปุ่ม download บน frontend |
+| `mutation` | `mutation` (artifact สุดท้าย) | ปุ่ม download บนหน้าเว็บ |
 
-เพิ่ม bucket: `mkdir dev_tools/fake-gcs/data/<name>` แล้ว restart container
+ถ้าต้องการ bucket เพิ่ม ให้สร้าง directory ด้วย `mkdir dev_tools/fake-gcs/data/<ชื่อ>` แล้ว restart container
 
-## Inspect / reset
+## ดูและล้างข้อมูล
 
 ```sh
-curl -s localhost:4443/storage/v1/b                       # list bucket
-curl -s localhost:4443/storage/v1/b/similar_protein/o     # list object ใน bucket
+curl -s localhost:4443/storage/v1/b                       # รายชื่อ bucket
+curl -s localhost:4443/storage/v1/b/similar_protein/o     # object ใน bucket หนึ่ง
 ```
 
-object ที่เขียนถูกเก็บ **in memory** — `docker compose -f dev_tools/fake-gcs/compose.yaml down`
-(หรือ `up` ใหม่) ล้างหมด ไม่มีอะไรเขียนกลับเข้า `data/` entry `data/*/*` ใน `.gitignore` เป็นแค่
-safety net เผื่อ image version ในอนาคตเปลี่ยนพฤติกรรมนี้
+object ที่ service เขียนถูกเก็บไว้ใน memory เท่านั้น การปิดด้วย `make gcs-down` หรือ `make infra-down` จะล้างทั้งหมด และไม่มีอะไรถูกเขียนกลับลง `data/` บรรทัด `data/*/*` ใน `.gitignore` มีไว้กันเผื่อ image รุ่นต่อไปเปลี่ยนพฤติกรรมนี้
