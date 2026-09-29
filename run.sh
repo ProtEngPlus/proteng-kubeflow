@@ -12,16 +12,17 @@ if [ -z "$svc" ]; then
 fi
 
 if [ "$svc" != "all" ]; then
-  [ -x "projects/$svc/run.sh" ] || { echo "no such service: $svc"; echo "services: $services all"; exit 1; }
-  exec "projects/$svc/run.sh"
+  [ -f "projects/$svc/run.sh" ] || { echo "no such service: $svc"; echo "services: $services all"; exit 1; }
+  # bash explicitly: git stores these scripts without the execute bit.
+  exec bash "projects/$svc/run.sh"
 fi
 
 pids=()
 for s in $services; do
   [ "$s" = "evotune_ESM" ] && [ "${RUN_ESM:-0}" != "1" ] && { echo ">> skip $s (set RUN_ESM=1 to include)"; continue; }
-  [ -x "projects/$s/run.sh" ] || continue
+  [ -f "projects/$s/run.sh" ] || continue
   echo ">> starting $s"
-  ( "projects/$s/run.sh" 2>&1 | sed "s/^/[$s] /" ) &
+  ( bash "projects/$s/run.sh" 2>&1 | sed "s/^/[$s] /" ) &
   pids+=($!)
 done
 
