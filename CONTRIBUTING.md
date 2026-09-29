@@ -7,6 +7,14 @@
 - repo นี้เป็น public ห้ามใส่ credential และรายละเอียดของเครื่องที่ใช้ deploy
 - การ merge ไม่ได้ทำให้โค้ดขึ้น GPU VM ต้องเอาขึ้นเองตาม [how-to/deploy-ml-service.md](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/how-to/deploy-ml-service.md) ของ hub
 
+## แก้คู่กับ repo อื่น
+
+ของต่อไปนี้ต้องแก้พร้อมกับอีก repo ในงานชุดเดียวกัน และ PR ของทั้งสองฝั่งต้องใส่ `Related: ProtEngPlus/<repo>#<เลข PR>` ถึงกัน รายการเต็มและลำดับการ merge อยู่ใน [CONTRIBUTING ของ hub](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/CONTRIBUTING.md#ของที่ต้องแก้คู่กันข้าม-repo)
+
+- routing key ใน `consumer.py` ต้องตรงกับชื่อ tool ใน `createJobConfig.ts` ของ frontend และชื่อ stage ใน conductor
+- การอ่าน message และการส่งผลใน `pkg/common` ต้องตรงกับ struct ใน `internal/conductor/model.go` ของ conductor
+- ถ้าเพิ่ม service หรือ queue ใหม่ ต้องเพิ่มใน `SERVICES` ของ `Makefile` และ `EXPECTED_QUEUES` ใน `ops/lib.sh` ของ devops-infra
+
 ## hook
 
 `make setup` ติดตั้ง hook ให้ด้วย pre-commit
