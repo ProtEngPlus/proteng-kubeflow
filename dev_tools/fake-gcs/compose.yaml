@@ -1,5 +1,5 @@
 # Local-only GCS emulator for exercising the ML pipeline end to end.
-# See ../../SETUP.md -> "Full pipeline locally".
+# See dev_tools/fake-gcs/README.md and `make env-local-gcs` in the repo root.
 #
 # fake-gcs-server reads ./data at startup and turns every top-level directory
 # into a bucket, so the four pipeline buckets exist with no API call. Objects the
