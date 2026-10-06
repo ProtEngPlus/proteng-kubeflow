@@ -1,8 +1,11 @@
 import random
 
+import jax
 import numpy as np
 import pandas as pd
-from jax_unirep import get_reps
+from jax import vmap
+from jax_unirep.layers import mLSTM
+from jax_unirep.utils import get_embeddings
 from src.logger import mutationLogger as logger
 from src.service.mutation_space import (
     applyMutations,
@@ -11,11 +14,18 @@ from src.service.mutation_space import (
     randomMutant,
 )
 
+_, _mlstm_apply = mLSTM(output_dim=64)
+
+
+@jax.jit
+def _unirep_avg(params, embedded):
+    _, _, h = vmap(lambda e: _mlstm_apply(params, e))(embedded)
+    return h.mean(axis=1)
+
 
 def get_embedding(seq, representation_type, repr_source):
     if representation_type == "unirep":
-        reps, _, _ = get_reps([seq], params=repr_source, mlstm_size=64)
-        return reps
+        return np.asarray(_unirep_avg(repr_source, get_embeddings([seq])))
     elif representation_type == "ESM":
         reps = repr_source.reshape(1, -1)
         return reps
