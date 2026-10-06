@@ -3,6 +3,7 @@ from src.model.model import RequestMutationBody
 from src.service.db import getModelFromDB, getParamsFromDB
 from src.service.directed_evo import runDirectedEvoTrajectories
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
+from src.service.mutation_space import getAminoAcids
 from src.service.utils import convertTwoArraysToDict
 
 
@@ -30,13 +31,17 @@ def runMutationThread(requestBody: RequestMutationBody):
 
         # run directed evolution
         logger.info(f"job id {requestBody.job_id}: running directed evolution...")
+        config = requestBody.config
         s_records, fitness_records = runDirectedEvoTrajectories(
             requestBody.input,
             model,
-            requestBody.config.temperature,
-            requestBody.config.num_iterations,
-            requestBody.config.num_trajectories,
-            requestBody.config.mutate_pos_range,
+            config.temperature,
+            config.num_iterations,
+            config.num_trajectories,
+            config.mutate_regions,
+            config.num_mutations_low,
+            config.num_mutations_high,
+            getAminoAcids(config.amino_acid_set),
             params,
             evotune_model_type,
         )
@@ -45,12 +50,12 @@ def runMutationThread(requestBody: RequestMutationBody):
         # Send Success Message to Message Queue
         logger.debug("Sending success message to MQ...")
         logger.info(
-            f"s records {s_records.shape} fitness_records {fitness_records.shape}"
+            f"s records {len(s_records)} fitness_records {len(fitness_records)}"
         )
         publishCompletedJobStatusToMQ(
             requestBody.job_id,
             requestBody.mutation_id,
-            convertTwoArraysToDict(s_records[:, -1], fitness_records[:, -1, 0]),
+            convertTwoArraysToDict(s_records, fitness_records),
         )
         logger.debug("Success message sent!")
 

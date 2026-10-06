@@ -16,7 +16,10 @@ request_body = RequestMutationBody(
         "temperature": 0.01,
         "num_iterations": 25,
         "num_trajectories": 5,
-        "mutate_pos_range": 8,
+        "mutate_regions": [[3, 10], [18, 25]],
+        "num_mutations_low": 1,
+        "num_mutations_high": 3,
+        "amino_acid_set": "20 standard",
     },
     artifact={
         "ESM": {"bucket_name": "unirep", "path": "6811d38896587d7e563c4e75.pkl"},

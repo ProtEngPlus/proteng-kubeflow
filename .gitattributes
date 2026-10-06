@@ -1,1 +1,6 @@
 *.fasta filter=lfs diff=lfs merge=lfs -text
+
+# Scripts run on Linux (CI, the GPU VM): keep LF even on Windows checkouts.
+*.sh text eol=lf
+Makefile text eol=lf
+*.mk text eol=lf
