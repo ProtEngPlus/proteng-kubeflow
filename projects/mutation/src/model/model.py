@@ -19,7 +19,10 @@ class MutationParams(BaseModel):
         int  # how many subsequent mutation trials per simulated evolution trajectory
     )
     num_trajectories: int  # how many separate evolution trajectories to run
-    mutate_pos_range: int  # where the next mutation is located
+    mutate_regions: list[tuple[int, int]] | None = None  # [start, end], 1-based
+    num_mutations_low: int = 1  # fewest mutated positions per sequence
+    num_mutations_high: int = 3  # most mutated positions per sequence
+    amino_acid_set: str = "20 standard"  # which amino acids a position can mutate to
 
 
 class RequestMutationBody(BaseModel):
