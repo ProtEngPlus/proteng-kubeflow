@@ -13,3 +13,5 @@ creds.json
 **/__pycache__/
 /dev_tools/fake-gcs/data/*/*
 !/dev_tools/fake-gcs/data/*/.gitkeep
+.active_jobs
+.active_jobs.tmp

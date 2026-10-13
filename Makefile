@@ -30,7 +30,7 @@ PYTHON ?= $(shell python3 -c 'import sys' >/dev/null 2>&1 && echo python3 || ech
 venv_python = $(firstword $(wildcard projects/$(1)/.venv/Scripts/python.exe projects/$(1)/.venv/bin/python))
 
 .PHONY: help setup hooks env env-local-gcs venv venvs patch-jax run run-all gcs-up gcs-down \
-	send-job lint fmt check docker-build gpu-status gpu-drift
+	send-job lint fmt test check docker-build gpu-status gpu-drift
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "} /^##@/ {printf "\n%s\n", substr($$0, 5)} /^[a-zA-Z0-9_.-]+:.*## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -86,7 +86,10 @@ fmt: ## Format with black and apply ruff fixes
 	$(PYTHON) -m black .
 	$(PYTHON) -m ruff check --fix .
 
-check: lint ## Everything CI checks (needs `pip install black==25.1.0 ruff==0.16.5`)
+test: ## Unit tests of the shared code (stdlib unittest, no venv needed)
+	$(PYTHON) -m unittest discover -s pkg -p "test_*.py" -t .
+
+check: lint test ## Everything CI checks (needs `pip install black==25.1.0 ruff==0.16.5`)
 
 docker-build: ## Build one consumer image locally (SVC=...)
 	@if [ -z "$(SVC)" ]; then echo "usage: make docker-build SVC=<service>"; exit 2; fi

@@ -7,7 +7,7 @@
 # The GPU VM is assembled by hand (no git, no CI/CD), so files there drift from
 # the repo. Run this before and after copying a change to the VM. Compared:
 #   projects/<svc>/consumer.py and src/**.py  <->  ~/proteng-gpu/apps[-prod]/<svc>/...
-#   pkg/common/**.py                           <->  ~/proteng-gpu/app/pkg/common/...
+#   pkg/common/**.py                           <->  ~/proteng-gpu/app[-prod]/pkg/common/...
 # and, when the private devops-infra repo is cloned next to this one, the VM's
 # own scripts (kept there, not here, because this repo is public):
 #   devops-infra gpu-vm/{bin,tunnels}/*        <->  ~/proteng-gpu/{bin,tunnels}/*
@@ -67,8 +67,10 @@ pairs=$(
       fi
     done
   done
-  tracked pkg/common | { grep -E '\.py$' || true; } | while read -r p; do
-    printf 'proteng-gpu/app/%s\tkf:%s\n' "$p" "$p"
+  for base in $bases; do
+    tracked pkg/common | { grep -E '\.py$' || true; } | while read -r p; do
+      printf 'proteng-gpu/app%s/%s\tkf:%s\n' "${base#apps}" "$p" "$p"
+    done
   done
   if [ "$infra_ok" = true ]; then
     infra_tracked gpu-vm/bin gpu-vm/tunnels | while read -r p; do
@@ -96,7 +98,10 @@ for base in '"$bases"'; do
     [ -d "$d/src" ] && find "$d/src" -name "*.py" -not -path "*/__pycache__/*"
   done
 done
-[ -d proteng-gpu/app/pkg/common ] && find proteng-gpu/app/pkg/common -name "*.py" -not -path "*/__pycache__/*"
+for base in '"$bases"'; do
+  d="proteng-gpu/app${base#apps}/pkg/common"
+  [ -d "$d" ] && find "$d" -name "*.py" -not -path "*/__pycache__/*"
+done
 true'
 
 # shellcheck disable=SC2086 # GPU_SSH is a command prefix such as "ssh proteng-gpu".
