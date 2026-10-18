@@ -9,9 +9,7 @@ def run_evaluation(request_body):
             results.append(
                 {
                     "mutation_result_id": mutant.mutation_result_id,
-                    "values": {
-                        "mock_score": round(0.50 + index * 0.01, 4)
-                    },
+                    "values": {"mock_score": round(0.50 + index * 0.01, 4)},
                 }
             )
 

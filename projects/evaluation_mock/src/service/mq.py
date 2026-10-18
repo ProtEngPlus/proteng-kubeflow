@@ -2,16 +2,15 @@ import datetime
 import json
 import os
 
-from pkg.common.publisher import publishDefaultExchange
 from src.const import EVALUATION_SERVICE_NAME, EVALUATION_STAGE_ID
+
+from pkg.common.publisher import publishDefaultExchange
 
 
 def publish_completed(request_body, results):
     message = {
         "service_name": EVALUATION_SERVICE_NAME,
-        "timestamp": datetime.datetime.now(
-            datetime.timezone.utc
-        ).isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "data": {
             "job_id": request_body.job_id,
             "stage_id": EVALUATION_STAGE_ID,
@@ -33,9 +32,7 @@ def publish_completed(request_body, results):
 def publish_failed(request_body, error):
     message = {
         "service_name": EVALUATION_SERVICE_NAME,
-        "timestamp": datetime.datetime.now(
-            datetime.timezone.utc
-        ).isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "data": {
             "job_id": request_body.job_id,
             "stage_id": EVALUATION_STAGE_ID,

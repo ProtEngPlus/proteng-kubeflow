@@ -12,9 +12,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pkg.common.logger import getLogger
 from src.model.model import RequestEvaluationBody
 from src.service.thread import run_evaluation
+
+from pkg.common.logger import getLogger
 
 
 async def handle_message(body, logger):
