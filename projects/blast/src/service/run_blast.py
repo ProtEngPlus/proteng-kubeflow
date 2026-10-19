@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import re
 import socket
 
@@ -13,6 +14,11 @@ from pkg.common.db import uploadToBucket
 from pkg.common.publisher import *
 
 socket.setdefaulttimeout(180)
+
+NCBIWWW.email = os.getenv("NCBI_EMAIL")
+NCBIWWW.tool = "protengplus"
+if not NCBIWWW.email:
+    logger.warning("NCBI_EMAIL is not set; NCBI may throttle anonymous requests")
 
 
 def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
