@@ -88,8 +88,9 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         df["e_values"] = df["e_values"].astype("float64")
         df["acc_len"] = df["acc_len"].astype(int)
         df["length"] = df["sequences"].apply(len)
+        query_length = len(blastParams.sequence)
         df["query_cover"] = (
-            (df["hsp_query_to"] - df["hsp_query_from"] + 1) / df["length"]
+            (df["hsp_query_to"] - df["hsp_query_from"] + 1) / query_length
         ) * 100
         df["Id"] = [str(ObjectId()) for _ in range(len(df))]
         df["is_selected"] = [True for _ in range(len(df))]
