@@ -8,6 +8,7 @@ from Bio.Blast import NCBIWWW
 from bson import ObjectId
 from src.logger import blastLogger as logger
 from src.model.model import BlastParams
+from src.service.hit_filter import filter_hits
 
 from pkg.common.db import uploadToBucket
 from pkg.common.publisher import *
@@ -87,22 +88,18 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         df["e_values"] = df["e_values"].astype("float64")
         df["acc_len"] = df["acc_len"].astype(int)
         df["length"] = df["sequences"].apply(len)
+        query_length = len(blastParams.sequence)
         df["query_cover"] = (
-            (df["hsp_query_to"] - df["hsp_query_from"] + 1) / df["length"]
+            (df["hsp_query_to"] - df["hsp_query_from"] + 1) / query_length
         ) * 100
         df["Id"] = [str(ObjectId()) for _ in range(len(df))]
         df["is_selected"] = [True for _ in range(len(df))]
 
-        filtered_df = df[
-            (df["query_cover"] > hsp_cov) & (df["length"] < seq_length)
-        ].dropna(subset=["query_cover"])
-        if filtered_df.empty:
+        filtered_df, fell_back = filter_hits(df, hsp_cov, seq_length)
+        if fell_back:
             logger.warning(
                 f"job id {jobId}: no hits with query_cover>{hsp_cov} and "
-                f"length<{seq_length}; falling back to the cover filter only"
-            )
-            filtered_df = df[(df["query_cover"] > hsp_cov)].dropna(
-                subset=["query_cover"]
+                f"acc_len<={seq_length}; falling back to the cover filter only"
             )
 
         if filtered_df.empty:

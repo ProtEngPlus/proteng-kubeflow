@@ -56,7 +56,7 @@ class BlastParams(BaseModel):
     password: str | None = None
     hsp_cov: int | None = 0
     random_state: int | None = 2023
-    seq_length: int | None = (100,)
+    seq_length: int | None = 100
 
 
 class RequestBlastBody(BaseModel):

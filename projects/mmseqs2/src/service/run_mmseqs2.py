@@ -9,6 +9,7 @@ import pandas as pd
 from bson import ObjectId
 from src.logger import mmseqs2Logger as logger
 from src.model.model import MMseqs2Params
+from src.service.hit_filter import filter_hits
 
 from pkg.common.db import uploadToBucket
 from pkg.common.publisher import *
@@ -144,13 +145,12 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
 
         df.drop(columns=["aln_len"], inplace=True)
 
-        filtered_df = df[df["length"] < seq_length].dropna(subset=["query_cover"])
-        if filtered_df.empty:
+        filtered_df, fell_back = filter_hits(df, seq_length)
+        if fell_back:
             logger.warning(
-                f"job id {jobId}: no hits shorter than seq_length={seq_length}; "
+                f"job id {jobId}: no hits with length<={seq_length}; "
                 "falling back to all hits"
             )
-            filtered_df = df.dropna(subset=["query_cover"])
 
         if filtered_df.empty:
             logger.error(f"job id {jobId}: error run mmseqs2: No sequence found")
