@@ -7,7 +7,12 @@ from bson import ObjectId
 from src.logger import blastLogger as logger
 from src.model.model import BlastParams
 from src.service.hit_filter import filter_hits
-from src.service.hit_parser import parse_hits
+from src.service.hit_parser import (
+    attach_full_sequences,
+    fetch_fasta,
+    parse_fasta_by_accession,
+    parse_hits,
+)
 
 from pkg.common.db import uploadToBucket
 from pkg.common.publisher import *
@@ -33,6 +38,14 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         result = resultHandle.read()
 
         df = parse_hits(result)
+        if not df.empty:
+            fasta = fetch_fasta(df["accession"].tolist())
+            df, dropped = attach_full_sequences(df, parse_fasta_by_accession(fasta))
+            if dropped:
+                logger.warning(
+                    f"job id {jobId}: dropped {dropped} hits with no full "
+                    "sequence from NCBI"
+                )
 
         df["score"] = df["score"].astype(int)
         df["max_score"] = df["max_score"].astype("float64")

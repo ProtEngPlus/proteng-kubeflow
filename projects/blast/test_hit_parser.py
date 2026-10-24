@@ -1,6 +1,10 @@
 import unittest
 
-from src.service.hit_parser import parse_hits
+from src.service.hit_parser import (
+    attach_full_sequences,
+    parse_fasta_by_accession,
+    parse_hits,
+)
 
 
 def hsp_xml(score, bits, evalue, qfrom, qto, identity, align_len, hseq):
@@ -131,6 +135,49 @@ class ParseHitsTest(unittest.TestCase):
         self.assertTrue(df.empty)
         self.assertIn("sequences", df.columns)
         self.assertIn("acc_len", df.columns)
+
+
+FASTA = """>XP_000001.1 kinase A [Homo sapiens]
+MKTAYIAKQRQISFVKSHFS
+RQLEERLGLIEVQAPILSRV
+>sp|P69905.2|HBA_HUMAN RecName: Full=Hemoglobin subunit alpha
+MVLSPADKTNVKAAWGKVGA
+"""
+
+
+class FullSequencesTest(unittest.TestCase):
+    def test_keys_fasta_by_accession_without_version(self):
+        full = parse_fasta_by_accession(FASTA)
+        self.assertEqual(
+            full,
+            {
+                "XP_000001": "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRV",
+                "P69905": "MVLSPADKTNVKAAWGKVGA",
+            },
+        )
+
+    def test_replaces_alignment_with_full_sequence(self):
+        df, dropped = attach_full_sequences(
+            parse_hits(TWO_HITS), parse_fasta_by_accession(FASTA)
+        )
+        self.assertEqual(dropped, 0)
+        self.assertEqual(
+            df["sequences"].tolist(),
+            ["MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRV", "MVLSPADKTNVKAAWGKVGA"],
+        )
+
+    def test_drops_hits_missing_from_fasta(self):
+        df, dropped = attach_full_sequences(
+            parse_hits(TWO_HITS), {"XP_000001": "MKTAYIAKQRQISFVKSHFS"}
+        )
+        self.assertEqual(dropped, 1)
+        self.assertEqual(df["accession"].tolist(), ["XP_000001"])
+
+    def test_matches_versioned_hit_accession(self):
+        hits = parse_hits(TWO_HITS)
+        hits["accession"] = ["XP_000001.1", "P69905.2"]
+        df, dropped = attach_full_sequences(hits, parse_fasta_by_accession(FASTA))
+        self.assertEqual(dropped, 0)
 
 
 if __name__ == "__main__":
