@@ -28,7 +28,7 @@ ML services of ProtEngPlus. Each service in `projects/<svc>/` is a RabbitMQ cons
 - `STORAGE_EMULATOR_HOST` is for local runs only. Never set it in anything that runs real jobs.
 - Queues are exclusive and messages are acked before the job finishes, so a consumer that disconnects or dies loses work silently. Keep this in mind before changing connection or ack handling; the fix is tracked under BLB5.
 - `blast` calls NCBI through `NCBIWWW.qblast`, which has no overall timeout. Respect NCBI usage rules (`email`, `tool`, no parallel bursts).
-- Merging does not deploy anything to the GPU VM; code is copied by hand. Pushes touching `projects/**` or `pkg/common/**` build images that are not used (cluster replicas are 0).
+- Merging into `dev` deploys the dev consumers on the GPU VM automatically a few minutes after CI passes, so a red CI blocks the deploy. Each consumer finishes its running job before it restarts, and a consumer that does not come back is rolled back. Production (`main`) is still copied by hand. Pushes touching `projects/**` or `pkg/common/**` build images that are not used (cluster replicas are 0).
 
 ## Team workflow
 
