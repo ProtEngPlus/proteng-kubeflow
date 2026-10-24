@@ -98,7 +98,7 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
         if fell_back:
             logger.warning(
                 f"job id {jobId}: no hits with query_cover>{hsp_cov} and "
-                f"acc_len<{seq_length}; falling back to the cover filter only"
+                f"acc_len<={seq_length}; falling back to the cover filter only"
             )
 
         if filtered_df.empty:

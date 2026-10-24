@@ -15,6 +15,12 @@ class FilterHitsTest(unittest.TestCase):
         self.assertFalse(fell_back)
         self.assertEqual(hits["length"].tolist(), [50, 60])
 
+    def test_keeps_hits_exactly_seq_length_long(self):
+        df = make_df([(100, 90.0), (101, 90.0)])
+        hits, fell_back = filter_hits(df, seq_length=100)
+        self.assertFalse(fell_back)
+        self.assertEqual(hits["length"].tolist(), [100])
+
     def test_falls_back_to_all_hits_when_no_hit_is_short_enough(self):
         df = make_df([(150, 90.0), (200, 10.0)])
         hits, fell_back = filter_hits(df, seq_length=100)

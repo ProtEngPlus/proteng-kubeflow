@@ -26,6 +26,12 @@ class FilterHitsTest(unittest.TestCase):
         hits, _ = filter_hits(df, hsp_cov=30, seq_length=100)
         self.assertEqual(hits["acc_len"].tolist(), [60])
 
+    def test_keeps_hits_exactly_seq_length_long(self):
+        df = make_df([(100, 90.0), (101, 90.0)])
+        hits, fell_back = filter_hits(df, hsp_cov=30, seq_length=100)
+        self.assertFalse(fell_back)
+        self.assertEqual(hits["acc_len"].tolist(), [100])
+
     def test_ignores_aligned_length(self):
         df = pd.DataFrame(
             [(40, 150, 90.0), (140, 60, 90.0)],

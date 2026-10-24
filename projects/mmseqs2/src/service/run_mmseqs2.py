@@ -148,7 +148,7 @@ def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomS
         filtered_df, fell_back = filter_hits(df, seq_length)
         if fell_back:
             logger.warning(
-                f"job id {jobId}: no hits shorter than seq_length={seq_length}; "
+                f"job id {jobId}: no hits with length<={seq_length}; "
                 "falling back to all hits"
             )
 
