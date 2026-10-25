@@ -3,11 +3,6 @@ from dataclasses import dataclass
 
 STANDARD_AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 
-AMINO_ACID_SETS = {
-    "20 standard": STANDARD_AMINO_ACIDS,
-    "20 standard + U": STANDARD_AMINO_ACIDS + "U",  # U = selenocysteine
-}
-
 
 @dataclass
 class Scope:  # what one trajectory may mutate
@@ -15,14 +10,6 @@ class Scope:  # what one trajectory may mutate
     low: int
     high: int
     region_of: dict | None = None  # set when mutants must cover at least 2 regions
-
-
-def getAminoAcids(name):
-    if name not in AMINO_ACID_SETS:
-        raise ValueError(
-            f"Unknown amino_acid_set {name!r}, expected one of {list(AMINO_ACID_SETS)}"
-        )
-    return AMINO_ACID_SETS[name]
 
 
 def resolveRegions(regions, seq_len):
@@ -113,11 +100,11 @@ def applyMutations(s_wt, mutated):
     return "".join(seq)
 
 
-def pickAminoAcid(amino_acids, *excluded):
-    return random.choice([aa for aa in amino_acids if aa not in excluded])
+def pickAminoAcid(*excluded):
+    return random.choice([aa for aa in STANDARD_AMINO_ACIDS if aa not in excluded])
 
 
-def randomMutant(s_wt, scope, amino_acids):
+def randomMutant(s_wt, scope):
     count = random.randint(scope.low, scope.high)
     if scope.region_of is None:
         chosen = random.sample(scope.positions, count)
@@ -130,10 +117,10 @@ def randomMutant(s_wt, scope, amino_acids):
         chosen = [random.choice(by_region[first]), random.choice(by_region[second])]
         rest = [pos for pos in scope.positions if pos not in chosen]
         chosen += random.sample(rest, count - 2)
-    return {pos: pickAminoAcid(amino_acids, s_wt[pos]) for pos in chosen}
+    return {pos: pickAminoAcid(s_wt[pos]) for pos in chosen}
 
 
-def proposeMutant(s_wt, mutated, scope, amino_acids):
+def proposeMutant(s_wt, mutated, scope):
     # one random step that stays within the scope's limits
     region_of = scope.region_of
     free = [pos for pos in scope.positions if pos not in mutated]
@@ -163,15 +150,15 @@ def proposeMutant(s_wt, mutated, scope, amino_acids):
     proposal = dict(mutated)
     if move == "add":
         pos = random.choice(free)
-        proposal[pos] = pickAminoAcid(amino_acids, s_wt[pos])
+        proposal[pos] = pickAminoAcid(s_wt[pos])
     elif move == "remove":
         del proposal[random.choice(removable)]
     elif move == "change":
         pos = random.choice(list(proposal))
-        proposal[pos] = pickAminoAcid(amino_acids, s_wt[pos], proposal[pos])
+        proposal[pos] = pickAminoAcid(s_wt[pos], proposal[pos])
     else:
         old = random.choice(shiftable)
         del proposal[old]
         pos = random.choice(shift_targets[old])
-        proposal[pos] = pickAminoAcid(amino_acids, s_wt[pos])
+        proposal[pos] = pickAminoAcid(s_wt[pos])
     return proposal
