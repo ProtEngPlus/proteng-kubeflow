@@ -2,11 +2,12 @@
 # Creates projects/<service>/.venv with that service's dependencies.
 #
 # Usage: scripts/venv.sh <service>        (for example: scripts/venv.sh mmseqs2)
+#        VENV_PYTHON=<python3.10> scripts/venv.sh <service>
 #
-# The pinned versions in requirements.txt have no wheels for current Python and
-# do not build from source, so the pins are stripped and pip picks compatible
-# versions (a known source of drift, see explanation/known-issues.md in the
-# manual-guides repo). Per-service fixes applied here:
+# The venv uses Python 3.10, the version on the GPU VM, and installs the pins in
+# requirements.txt as they are. projects/<service>/constraints.txt is the
+# `pip freeze` of that service's venv on the GPU VM, so the indirect
+# dependencies also match production. Per-service fixes applied here:
 #   - mmseqs2: skip the legacy `bson` package; pymongo already provides bson.
 #   - evotune, evotune_ESM, fittop, mutation: jax-unirep needs setuptools<81
 #     (pkg_resources) and the jax.numpy.clip patch in dev_tools/patches.
@@ -20,10 +21,22 @@ svc="${1:-}"
 dir="$ROOT/projects/$svc"
 [ -f "$dir/requirements.txt" ] || { echo "error: no such service: $svc" >&2; exit 2; }
 
-# python3 on Windows is often the Microsoft Store stub, so test that it runs.
-PY="${PYTHON:-}"
+is_310() { "$1" -c 'import sys; sys.exit(sys.version_info[:2] != (3, 10))' >/dev/null 2>&1; }
+
+PY="${VENV_PYTHON:-}"
 if [ -z "$PY" ]; then
-  if python3 -c 'import sys' >/dev/null 2>&1; then PY=python3; else PY=python; fi
+  for candidate in python3.10 python3 python; do
+    if is_310 "$candidate"; then PY=$candidate; break; fi
+  done
+fi
+if [ -z "$PY" ] && command -v py >/dev/null 2>&1; then
+  PY=$(py -V:3.10 -c 'import sys; print(sys.executable)' 2>/dev/null || true)
+fi
+if [ -z "$PY" ] || ! is_310 "$PY"; then
+  echo "error: the venvs need Python 3.10, the version on the GPU VM" >&2
+  echo "  Windows: py install 3.10" >&2
+  echo "  Linux/macOS: install python3.10, or point VENV_PYTHON at it" >&2
+  exit 2
 fi
 
 cd "$dir"
@@ -32,23 +45,22 @@ if [ ! -d .venv ]; then
   "$PY" -m venv .venv
 fi
 if [ -x .venv/Scripts/python.exe ]; then VPY=.venv/Scripts/python.exe; else VPY=.venv/bin/python; fi
+if ! is_310 "$VPY"; then
+  echo "error: projects/$svc/.venv uses $("$VPY" --version 2>&1), not Python 3.10" >&2
+  echo "  delete it and run again: rm -rf projects/$svc/.venv" >&2
+  exit 2
+fi
 
 "$VPY" -m pip install --quiet --upgrade pip
 
-# Pins are stripped, except for packages whose newer major versions changed the
-# API the code uses. jax-unirep 3.x (2026) is not compatible with the 2.2.0 API
-# (layers module, get_reps params) that evotune/fittop/mutation and the patch
-# rely on; it is pure Python, so keeping its pin never blocks the install.
-KEEP_PINS='^(jax-unirep|jax_unirep)[=<>~!]'
-req=.venv/requirements-unpinned.txt
-{
-  grep -E "$KEEP_PINS" requirements.txt || true
-  grep -vE "$KEEP_PINS" requirements.txt | sed -E 's/[=<>~!].*$//; s/[[:space:]]+$//'
-} | grep -vE '^[[:space:]]*(#|$)' >"$req"
+req=.venv/requirements-install.txt
+grep -vE '^[[:space:]]*(#|$)' requirements.txt >"$req"
+constraints=()
+[ -f constraints.txt ] && constraints=(-c constraints.txt)
 
 jax_service=false
 case "$svc" in
-  mmseqs2) sed -i '/^bson$/d' "$req" ;;
+  mmseqs2) sed -i -E '/^bson([=<>~! ]|$)/d' "$req" ;;
   evotune | evotune_ESM | fittop | mutation) jax_service=true ;;
 esac
 
@@ -57,7 +69,7 @@ if [ "$jax_service" = true ]; then
 fi
 
 echo ">> installing dependencies for $svc (this can take several minutes)"
-"$VPY" -m pip install --quiet -r "$req" -r "$ROOT/pkg/common/requirements.txt"
+"$VPY" -m pip install --quiet -r "$req" -r "$ROOT/pkg/common/requirements.txt" "${constraints[@]}"
 
 if [ "$jax_service" = true ]; then
   activations=$("$VPY" -c 'import importlib.util as u; print(u.find_spec("jax_unirep").submodule_search_locations[0])')/activations.py

@@ -26,6 +26,8 @@ REF ?= HEAD
 GPU_VM ?= proteng-gpu
 # python3 on Windows is often the Microsoft Store stub, so check that it runs.
 PYTHON ?= $(shell python3 -c 'import sys' >/dev/null 2>&1 && echo python3 || echo python)
+# Python 3.10 for the service venvs; empty lets scripts/venv.sh find it.
+VENV_PYTHON ?=
 # Python inside one service venv (Windows or Linux layout).
 venv_python = $(firstword $(wildcard projects/$(1)/.venv/Scripts/python.exe projects/$(1)/.venv/bin/python))
 
@@ -49,10 +51,10 @@ env-local-gcs: ## Also point every .env at the local fake-gcs emulator (local on
 
 venv: ## Create or update one service venv (SVC=blast|mmseqs2|evotune|fittop|mutation|evotune_ESM)
 	@if [ -z "$(SVC)" ]; then echo "usage: make venv SVC=<service>"; exit 2; fi
-	PYTHON=$(PYTHON) bash scripts/venv.sh $(SVC)
+	VENV_PYTHON=$(VENV_PYTHON) bash scripts/venv.sh $(SVC)
 
 venvs: ## Create or update the venvs of the 5 pipeline services (ESM=1 adds evotune_ESM)
-	@for s in $(SERVICES) $(if $(ESM),evotune_ESM); do PYTHON=$(PYTHON) bash scripts/venv.sh $$s; done
+	@for s in $(SERVICES) $(if $(ESM),evotune_ESM); do VENV_PYTHON=$(VENV_PYTHON) bash scripts/venv.sh $$s; done
 
 patch-jax: ## Re-apply the jax-unirep clip patch to every existing venv
 	$(PYTHON) dev_tools/patches/fix_jax_unirep.py
