@@ -38,7 +38,7 @@ make run SVC=mmseqs2
 - `make env-local-gcs` ชี้ทุก service ไปที่ fake-gcs ในเครื่อง จะได้รันจนจบได้โดยไม่ต้องมี credential ของ GCP
 - `make run SVC=<svc>` ผ่านเมื่อ log ขึ้น `Connecting to RabbitMQ`, `Connected to RabbitMQ` แล้ว `Consuming messages` ครั้งแรกอาจเงียบไป 20 ถึง 30 วินาทีเพราะ import library ของ ML ช้า
 
-ต้องมี Python 3.11 ขึ้นไป, Docker และ `pip install pre-commit black==25.1.0 ruff==0.16.5` ส่วน mmseqs2 ต้องมีโปรแกรม `mmseqs` ใน `PATH` วิธีติดตั้งบน Windows อยู่ใน tutorial ข้างบน
+ต้องมี Python 3.11 ขึ้นไป, Docker และ `pip install pre-commit black==25.1.0 ruff==0.16.5` ส่วน mmseqs2 ต้องมีโปรแกรม `mmseqs` ใน `PATH` วิธีติดตั้งบน Windows อยู่ใน tutorial ข้างบน นอกจากนี้ venv ของทุก service ต้องใช้ Python 3.10 ซึ่งเป็นเวอร์ชันเดียวกับเครื่องที่รันงานจริง บน Windows ลงได้ด้วย `py install 3.10` แล้ว `make venv` จะหาเจอเอง ส่วนบน Linux หรือ macOS ให้ลง `python3.10` หรือชี้ `VENV_PYTHON` ไปที่ตัวนั้น
 
 ## คำสั่ง
 
@@ -92,7 +92,8 @@ entrypoint ของทุก service ต้องมี `sys.path.append("../..
 
 ## ข้อควรระวัง
 
-- **requirements ถูกลงแบบถอด pin** version ที่ pin ไว้ใน `requirements.txt` ไม่มี wheel สำหรับ Python รุ่นใหม่ `make venv` จึงถอด pin ออกแล้วให้ pip เลือก version ล่าสุดที่เข้ากันได้ ยกเว้น `jax-unirep==2.2.0` ที่ต้องคงไว้ เพราะ 3.0.0 เปลี่ยน API จน evotune, fittop และ mutation ใช้ไม่ได้ ผลคือแต่ละเครื่องอาจได้ version ไม่ตรงกัน (BLB8)
+- **venv ใช้ Python 3.10 และลงตาม pin ทุกตัว** `make venv` ลง `requirements.txt` ตามที่ pin ไว้โดยไม่ถอด pin และใช้ `projects/<svc>/constraints.txt` ล็อก dependency ทางอ้อมด้วย ไฟล์นี้คือ `pip freeze` ของ venv บนเครื่องที่รันงานจริง venv ในเครื่องจึงได้ package ชุดเดียวกับ production ทุกตัว ถ้าแก้ `requirements.txt` ต้องสร้าง `constraints.txt` ใหม่จาก venv บนเครื่องนั้นหลังลง package แล้ว วิธีทำอยู่ใน [how-to/deploy-ml-service.md](https://github.com/ProtEngPlus/manual-guides-2023/blob/main/how-to/deploy-ml-service.md) ของ hub ถ้า `.venv` เดิมสร้างด้วย Python เวอร์ชันอื่น `make venv` จะหยุดและบอกให้ลบ `.venv` ทิ้งก่อน ห้ามอัปเกรด `jax-unirep` เพราะ 3.0.0 เปลี่ยน API จน evotune, fittop และ mutation ใช้ไม่ได้ และห้ามอัปเกรด `aio_pika` เป็น 10.x หรือ `aiormq` เป็น 7.x เพราะสองรุ่นนั้นต้องใช้ Python 3.11 ขึ้นไป
+- **บน Windows ต้อง import jax ก่อน sklearn ใน fittop** ใน venv ของ fittop ซึ่งใช้ scikit-learn 1.2.2 คู่กับ jaxlib 0.6.0 ถ้า import `sklearn` ก่อน `jax` จะได้ `ImportError: DLL load failed while importing utils` ส่วนโค้ดของ fittop import `jax_unirep` ก่อนอยู่แล้วจึงไม่โดน ปัญหานี้เจอบน Windows เท่านั้น
 - **jax-unirep ต้องใช้ patch และ `setuptools<81`** `jax-unirep` เรียก `jax.numpy.clip(x, a_min=-88)` ซึ่ง JAX รุ่นใหม่ไม่รับ และยัง `import pkg_resources` ซึ่งถูกถอดออกจาก setuptools ตั้งแต่ 81 `make venv` ลง `setuptools<81` และใส่ patch ให้เอง ถ้าสร้าง venv ด้วยมือ ให้รัน `make patch-jax` ต่อ รายละเอียดอยู่ใน [dev_tools/patches/README.md](./dev_tools/patches/README.md)
 - **mmseqs2 ต้องตัด `bson` ออก** package `bson` เป็นของเก่าที่ build ไม่ผ่านบน Python ใหม่ และไม่จำเป็น เพราะ `pymongo` มี `bson` ของตัวเองอยู่แล้ว `make venv` ตัดให้เอง
 - **ไฟล์ Swiss-Prot เก็บด้วย Git LFS** ถ้า `projects/mmseqs2/uniprot_sprot.fasta` มีขนาดแค่ไม่กี่ร้อย byte ให้รัน `git lfs pull`

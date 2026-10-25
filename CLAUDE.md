@@ -22,7 +22,7 @@ ML services of ProtEngPlus. Each service in `projects/<svc>/` is a RabbitMQ cons
 ## Things that break
 
 - Production runs on Python 3.10. Do not use syntax or stdlib features newer than 3.10.
-- `requirements.txt` pins are removed at install time (BLB8), except `jax-unirep==2.2.0`: 3.0.0 has a different API. Do not "upgrade" jax-unirep.
+- Service venvs use Python 3.10 and install `requirements.txt` as pinned, with `projects/<svc>/constraints.txt` (the `pip freeze` of production) locking indirect dependencies. Do not "upgrade" jax-unirep (3.0.0 has a different API), aio_pika (10.x needs Python 3.11) or aiormq (7.x needs Python 3.11). After changing `requirements.txt`, regenerate `constraints.txt` from production as described in the hub.
 - jax services need `setuptools<81` and the patch in `dev_tools/patches/fix_jax_unirep.py`. `make venv` does both.
 - mmseqs2 must not install the `bson` package; `pymongo` provides `bson`.
 - `STORAGE_EMULATOR_HOST` is for local runs only. Never set it in anything that runs real jobs.
