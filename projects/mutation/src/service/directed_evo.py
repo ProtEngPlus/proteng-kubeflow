@@ -14,6 +14,8 @@ from src.service.mutation_space import (
     randomMutant,
 )
 
+from pkg.common.esm import embedSequences
+
 _, _mlstm_apply = mLSTM(output_dim=64)
 
 
@@ -27,8 +29,7 @@ def get_embedding(seq, representation_type, repr_source):
     if representation_type == "unirep":
         return np.asarray(_unirep_avg(repr_source, get_embeddings([seq])))
     elif representation_type.lower() == "esm":
-        reps = repr_source.reshape(1, -1)
-        return reps
+        return embedSequences(repr_source, [seq])
 
     else:
         raise ValueError("Unsupported representation_type")
