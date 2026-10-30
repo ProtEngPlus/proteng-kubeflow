@@ -13,3 +13,5 @@ scikit-learn==1.2.2
 numpy==1.23.5
 aio_pika==10.0.1
 aiormq==7.0.0
+torch>=2.0.0
+transformers==4.39.3
