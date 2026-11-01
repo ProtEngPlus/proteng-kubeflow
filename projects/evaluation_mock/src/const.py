@@ -1,0 +1,2 @@
+EVALUATION_STAGE_ID = 4
+EVALUATION_SERVICE_NAME = "mock-evaluation"
