@@ -31,4 +31,4 @@ projects/blast/.venv/Scripts/python -u dev_tools/ncbi/ncbi_throughput_test.py --
 
 - ห้ามรันพร้อมกับ blast job ของ production เพราะหลาย request จาก IP เดียวกันเสี่ยงชน rate limit ของ NCBI
 - `qblast` ของ Biopython หน่วงเวลาระหว่างการถามผลเองอยู่แล้ว (เริ่มที่ 20 วินาทีแล้วเพิ่มถึง 60 วินาทีสำหรับ host สาธารณะของ NCBI) การเรียกทีละครั้งจึงไม่ต้องหน่วงเพิ่ม
-- script ตั้ง `NCBIWWW.email` และ `NCBIWWW.tool` ตามกติกาของ NCBI แต่ `run_blast.py` ของ blast service ยังไม่ได้ตั้ง งานแก้คือ BLB4
+- script ตั้ง `NCBIWWW.email` และ `NCBIWWW.tool` ตามกติกาของ NCBI เหมือนกับที่ `run_blast.py` ของ blast service ตั้งจาก env `NCBI_EMAIL`
