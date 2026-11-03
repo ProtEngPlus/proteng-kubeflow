@@ -7,6 +7,7 @@ from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold
 
 from pkg.common.db import downloadFromBucket
+from pkg.common.esm import embedSequences, loadESMModel
 
 
 def formatData(amount, sequences, scores):
@@ -75,50 +76,13 @@ def loadSeqs(seqs_df, bucket_name, model_path):
 
 
 def loadESMseqs(seqs_df, bucket_name, model_path):
-    N_seqs = len(seqs_df)
-    N_BATCHES = min(max(6, N_seqs // 500), N_seqs)
-    BATCH_LEN = int(np.ceil(N_seqs / N_BATCHES))
+    esm = loadESMModel(downloadFromBucket(bucket_name, model_path))
+    reps = embedSequences(esm, seqs_df.sequence.tolist())
 
-    # Load ESM representations from bucket
-    esm_np = pkl.loads(downloadFromBucket(bucket_name, model_path))
-
-    # Prepare column names based on the number of features
-    feat_cols = ["feat" + str(j) for j in range(1, esm_np.shape[1] + 1)]
-
-    # Initialize DataFrame with the first sequence
-    this_df = pd.DataFrame([esm_np[0]], columns=feat_cols)
-    this_df.insert(0, "sequence", seqs_df.sequence[0])
-    this_df.insert(1, "fitness", seqs_df.fitness[0])
-
-    for i in range(N_BATCHES):
-        # -----Proteng specific block start
-        start_seq = 1 + i * BATCH_LEN
-        end_seq = min(1 + (i + 1) * BATCH_LEN, N_seqs)
-        batch_seqs = seqs_df.sequence[start_seq:end_seq]
-        if len(batch_seqs) == 0:
-            continue
-        # -----Proteng specific block end
-        batch_reps = esm_np[start_seq:end_seq]
-        this_batch_df = pd.DataFrame(batch_reps, columns=feat_cols)
-        this_batch_df.insert(0, "sequence", batch_seqs.reset_index(drop=True))
-        this_batch_df.insert(
-            1, "fitness", seqs_df.fitness[start_seq:end_seq].reset_index(drop=True)
-        )
-
-        this_df = pd.concat(
-            [this_df.reset_index(drop=True), this_batch_df.reset_index(drop=True)]
-        ).reset_index(drop=True)
-
-    # Drop rows with any NaNs in feature columns or log them
-    feature_cols = this_df.columns[2:]
-    n_nan_rows = this_df[feature_cols].isna().any(axis=1).sum()
-    if n_nan_rows > 0:
-        this_df = this_df.dropna(subset=feature_cols).reset_index(drop=True)
-
-    # Optional strict check
-    assert (
-        not this_df[feature_cols].isna().any().any()
-    ), "Still found NaNs after dropping!"
+    feat_cols = ["feat" + str(j) for j in range(1, reps.shape[1] + 1)]
+    this_df = pd.DataFrame(reps, columns=feat_cols)
+    this_df.insert(0, "sequence", seqs_df.sequence.reset_index(drop=True))
+    this_df.insert(1, "fitness", seqs_df.fitness.reset_index(drop=True))
     return this_df
 
 
