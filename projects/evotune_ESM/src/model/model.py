@@ -13,7 +13,8 @@ class ArtifactPath(BaseModel):
 
 
 class ArtifactMap(BaseModel):
-    blast: ArtifactPath
+    blast: ArtifactPath | None = None
+    mmseqs2: ArtifactPath | None = None
 
 
 class QueryResult(BaseModel):

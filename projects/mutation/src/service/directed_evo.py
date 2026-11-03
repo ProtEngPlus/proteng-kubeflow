@@ -26,7 +26,7 @@ def _unirep_avg(params, embedded):
 def get_embedding(seq, representation_type, repr_source):
     if representation_type == "unirep":
         return np.asarray(_unirep_avg(repr_source, get_embeddings([seq])))
-    elif representation_type == "ESM":
+    elif representation_type.lower() == "esm":
         reps = repr_source.reshape(1, -1)
         return reps
 

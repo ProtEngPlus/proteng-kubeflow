@@ -1,20 +1,9 @@
-import os
-import sys
-
-print(sys.path)
-
-pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pkg"))
-if pkg_path not in sys.path:
-    sys.path.insert(0, pkg_path)
-
-
-# sys.path.append("../../../..")
-
-
 import logging
+import os
 
-import common.logger as protenglog
 import pandas as pd
+
+import pkg.common.logger as protenglog
 
 # silence TQDM
 if os.getenv("DEBUG") != "true":
@@ -116,7 +105,6 @@ def trainESM(trainSet, outDomainValSet, config):
     training_args = TrainingArguments(
         output_dir=temp_dir.name,
         save_strategy="epoch",
-        evaluation_strategy="epoch",
         learning_rate=config.learning_rate_config,
         num_train_epochs=config.n_epochs_config,
         weight_decay=config.weight_decay,

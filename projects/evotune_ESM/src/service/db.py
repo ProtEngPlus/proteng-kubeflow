@@ -7,14 +7,14 @@ from pkg.common.db import downloadFromBucket, uploadToBucket
 
 
 def getSequencesFromDB(requestBody: RequestEvotuneESMBody):
-    # Download sequence data from Blast Object Storage
+    # Download sequence data from protein query Object Storage
     # sequences = {
     #   "query_results": ["sequence1", "sequence2", ...],
     #   "randomState": int
     # }
-    sequences = downloadFromBucket(
-        requestBody.artifact.blast.bucket_name, requestBody.artifact.blast.path
-    )
+    tool_name = requestBody.meta[0]
+    tool = getattr(requestBody.artifact, tool_name)
+    sequences = downloadFromBucket(tool.bucket_name, tool.path)
     sequences = sequences.decode("utf-8")
     data = json.loads(sequences)
     return data
