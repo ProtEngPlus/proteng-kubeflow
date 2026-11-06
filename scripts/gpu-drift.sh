@@ -27,7 +27,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 which="${1:-all}"
 ref="${2:-HEAD}"
 GPU_SSH="${GPU_SSH:-ssh proteng-gpu}"
-SERVICES="blast mmseqs2 evotune fittop mutation"
+SERVICES="blast mmseqs2 evotune fittop mutation evaluation_mock"
 
 case "$which" in
   dev) bases="apps" ;;
