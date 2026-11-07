@@ -71,8 +71,10 @@ def attach_full_sequences(
 
 
 def accession_key(seq_id: str) -> str:
-    parts = seq_id.split("|")
-    accession = parts[1] if len(parts) > 1 else parts[0]
+    db, *rest = seq_id.split("|")
+    if db == "pdb" and len(rest) >= 2:
+        return f"{rest[0]}_{rest[1]}"
+    accession = next((part for part in rest if part), db)
     return accession.split(".")[0]
 
 
