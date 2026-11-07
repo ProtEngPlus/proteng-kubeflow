@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -12,7 +13,12 @@ from src.model.model import MMseqs2Params
 from src.service.hit_filter import filter_hits
 
 from pkg.common.db import uploadToBucket
-from pkg.common.publisher import *
+from pkg.common.publisher import (
+    Artifact,
+    JobStatusEventMessage,
+    JobUpdateData,
+    publishJobStatusEvent,
+)
 
 
 def runMMseqs2Thread(mmseqs2Params: MMseqs2Params, jobId, queryResultId, randomState):
