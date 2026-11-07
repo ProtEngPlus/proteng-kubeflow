@@ -3,7 +3,6 @@ import json
 import os
 import sys
 import threading
-import time
 
 sys.path.append("../../")
 
@@ -15,7 +14,12 @@ load_dotenv()
 from src.model.model import RequestEvaluationBody
 from src.service.thread import run_evaluation
 
+from pkg.common.jobs import JobTracker
 from pkg.common.logger import getLogger
+from pkg.common.shutdown import install_sigterm_handler, run_until_stopped
+
+stop = threading.Event()
+tracker = JobTracker()
 
 
 async def handle_message(body, logger):
@@ -27,14 +31,19 @@ async def handle_message(body, logger):
             f"plugin={request_body.plugin}"
         )
 
-        evaluation_thread = threading.Thread(
-            target=run_evaluation,
-            args=(request_body,),
-        )
-        evaluation_thread.start()
+        tracker.start(run_evaluation, args=(request_body,))
 
     except Exception as error:
         logger.error(f"Error processing evaluation message: {error}")
+
+
+async def consume(queue, logger):
+    async for message in queue:
+        try:
+            async with message.process():
+                await handle_message(message.body.decode(), logger)
+        except Exception as error:
+            logger.error(f"Error processing evaluation message: {error}")
 
 
 async def main(loop):
@@ -42,10 +51,13 @@ async def main(loop):
     rabbitmq_url = os.getenv("RABBITMQ_URL")
     binding_key = "evaluation.mock"
 
-    connection = await aio_pika.connect_robust(
-        rabbitmq_url,
-        loop=loop,
-    )
+    try:
+        logger.info("Connecting to RabbitMQ")
+        connection = await aio_pika.connect_robust(rabbitmq_url, loop=loop)
+        logger.info("Connected to RabbitMQ")
+    except Exception as error:
+        logger.fatal(f"Error connecting to RabbitMQ: {error}")
+        return
 
     async with connection:
         channel = await connection.channel()
@@ -66,30 +78,35 @@ async def main(loop):
             routing_key=binding_key,
         )
 
-        logger.info("Waiting for evaluation.mock messages")
+        logger.info("Consuming messages")
 
-        async for message in queue:
-            async with message.process():
-                await handle_message(
-                    message.body.decode(),
-                    logger,
-                )
+        if await run_until_stopped(consume(queue, logger), stop):
+            logger.info("SIGTERM received - no longer taking new jobs")
 
 
 RECONNECT_DELAY_SECONDS = 5
 
 if __name__ == "__main__":
+    install_sigterm_handler(stop)
     logger = getLogger("EvaluationMockSupervisor")
 
-    while True:
+    while not stop.is_set():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
         try:
             loop.run_until_complete(main(loop))
         except Exception as error:
-            logger.error(error)
+            logger.error(f"Unexpected error from main(): {error}")
         finally:
             loop.close()
 
-        time.sleep(RECONNECT_DELAY_SECONDS)
+        if stop.is_set():
+            break
+
+        logger.info(f"main() exited - reconnecting in {RECONNECT_DELAY_SECONDS}s")
+        stop.wait(RECONNECT_DELAY_SECONDS)
+
+    logger.info(f"Waiting for {tracker.active()} running job(s) to finish")
+    tracker.wait()
+    logger.info("All jobs finished - exiting")
