@@ -3,7 +3,6 @@ import json
 import os
 import socket
 
-from Bio.Blast import NCBIWWW
 from bson import ObjectId
 from src.logger import blastLogger as logger
 from src.model.model import BlastParams
@@ -14,6 +13,7 @@ from src.service.hit_parser import (
     parse_fasta_by_accession,
     parse_hits,
 )
+from src.service.ncbi_blast import search_blast
 
 from pkg.common.db import uploadToBucket
 from pkg.common.publisher import (
@@ -25,9 +25,7 @@ from pkg.common.publisher import (
 
 socket.setdefaulttimeout(180)
 
-NCBIWWW.email = os.getenv("NCBI_EMAIL")
-NCBIWWW.tool = "protengplus"
-if not NCBIWWW.email:
+if not os.getenv("NCBI_EMAIL"):
     logger.warning("NCBI_EMAIL is not set; NCBI may throttle anonymous requests")
 
 
@@ -45,8 +43,7 @@ def runBlastThread(blastParams: BlastParams, jobId, queryResultId, randomState):
             for k, v in blastParams.dict().items()
             if v is not None and k != "seq_length"
         }
-        resultHandle = NCBIWWW.qblast(**blastArgs)
-        result = resultHandle.read()
+        result = search_blast(blastArgs, jobId)
 
         df = parse_hits(result)
         if not df.empty:

@@ -198,12 +198,11 @@ class AccessionKeyTest(unittest.TestCase):
     def test_keeps_pdb_and_prf_hits(self):
         hits = parse_hits(TWO_HITS)
         hits["accession"] = ["6PXV_D", "1006230A"]
-        fasta = """
-        >pdb|6PXV|D Chain D, Insulin
-        FVNQHLCGSHLVEALYLVCGERGFFYTPKT
-        >prf||1006230A insulin,pro-
-        MALWMRLLPLLALLALWGPD
-        """
+        fasta = """>pdb|6PXV|D Chain D, Insulin
+FVNQHLCGSHLVEALYLVCGERGFFYTPKT
+>prf||1006230A insulin,pro-
+MALWMRLLPLLALLALWGPD
+"""
 
         df, dropped = attach_full_sequences(hits, parse_fasta_by_accession(fasta))
         self.assertEqual(dropped, 0)
