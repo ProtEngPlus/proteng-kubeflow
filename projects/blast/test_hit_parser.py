@@ -1,6 +1,7 @@
 import unittest
 
 from src.service.hit_parser import (
+    accession_key,
     attach_full_sequences,
     parse_fasta_by_accession,
     parse_hits,
@@ -178,6 +179,37 @@ class FullSequencesTest(unittest.TestCase):
         hits["accession"] = ["XP_000001.1", "P69905.2"]
         df, dropped = attach_full_sequences(hits, parse_fasta_by_accession(FASTA))
         self.assertEqual(dropped, 0)
+
+
+class AccessionKeyTest(unittest.TestCase):
+    def test_hit_and_fasta_ids_give_the_same_key(self):
+        cases = [
+            ("XP_000001.1", "XP_000001.1", "XP_000001"),
+            ("P69905", "sp|P69905.2|HBA_HUMAN", "P69905"),
+            ("6PXV_D", "pdb|6PXV|D", "6PXV_D"),
+            ("1006230A", "prf||1006230A", "1006230A"),
+            ("A12345", "pir||A12345", "A12345"),
+        ]
+        for hit_accession, fasta_id, key in cases:
+            with self.subTest(fasta_id=fasta_id):
+                self.assertEqual(accession_key(hit_accession), key)
+                self.assertEqual(accession_key(fasta_id), key)
+
+    def test_keeps_pdb_and_prf_hits(self):
+        hits = parse_hits(TWO_HITS)
+        hits["accession"] = ["6PXV_D", "1006230A"]
+        fasta = """>pdb|6PXV|D Chain D, Insulin
+FVNQHLCGSHLVEALYLVCGERGFFYTPKT
+>prf||1006230A insulin,pro-
+MALWMRLLPLLALLALWGPD
+"""
+
+        df, dropped = attach_full_sequences(hits, parse_fasta_by_accession(fasta))
+        self.assertEqual(dropped, 0)
+        self.assertEqual(
+            df["sequences"].tolist(),
+            ["FVNQHLCGSHLVEALYLVCGERGFFYTPKT", "MALWMRLLPLLALLALWGPD"],
+        )
 
 
 if __name__ == "__main__":
