@@ -8,7 +8,7 @@ class MMseqs2Params(BaseModel):
     min_seq_id: float | None = 0.0
     min_aln_len: int | None = 0
     cov_mode: int | None = 0
-    c: float | None = (0.0,)
+    c: float | None = 0.0
     seq_length: int | None = 100
     random_state: int | None = 2023
 

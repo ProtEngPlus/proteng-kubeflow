@@ -3,7 +3,6 @@ from src.model.model import RequestMutationBody
 from src.service.db import getModelFromDB, getParamsFromDB
 from src.service.directed_evo import runDirectedEvoTrajectories
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
-from src.service.mutation_space import getAminoAcids
 from src.service.utils import convertTwoArraysToDict
 
 
@@ -13,11 +12,12 @@ def runMutationThread(requestBody: RequestMutationBody):
 
         evotune_model_type = requestBody.meta[1]
 
-        # get e unirep params from DB
+        # get e unirep params (or the ESM model) from DB
         logger.debug("Getting e unirep params from DB...")
         params = getParamsFromDB(
             requestBody.artifact[requestBody.meta[1]].bucket_name,
             requestBody.artifact[requestBody.meta[1]].path,
+            evotune_model_type,
         )
         logger.debug("Params got!")
 
@@ -41,7 +41,6 @@ def runMutationThread(requestBody: RequestMutationBody):
             config.mutate_regions,
             config.num_mutations_low,
             config.num_mutations_high,
-            getAminoAcids(config.amino_acid_set),
             params,
             evotune_model_type,
         )

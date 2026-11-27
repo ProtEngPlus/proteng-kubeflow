@@ -14,6 +14,8 @@ from src.service.mutation_space import (
     randomMutant,
 )
 
+from pkg.common.esm import embedSequences
+
 _, _mlstm_apply = mLSTM(output_dim=64)
 
 
@@ -26,9 +28,8 @@ def _unirep_avg(params, embedded):
 def get_embedding(seq, representation_type, repr_source):
     if representation_type == "unirep":
         return np.asarray(_unirep_avg(repr_source, get_embeddings([seq])))
-    elif representation_type == "ESM":
-        reps = repr_source.reshape(1, -1)
-        return reps
+    elif representation_type.lower() == "esm":
+        return embedSequences(repr_source, [seq])
 
     else:
         raise ValueError("Unsupported representation_type")
@@ -49,12 +50,11 @@ def directedEvolution(
     num_iterations,
     T,
     scope,
-    amino_acids,
     Model,
     params,
     representation_type,
 ):  # input = (wild-type sequence, number of mutation iterations, "temperature")
-    mutated = randomMutant(s_wt, scope, amino_acids)
+    mutated = randomMutant(s_wt, scope)
     s = applyMutations(s_wt, mutated)  # initial mutant sequence for this trajectory
     y = predictScore(s, Model, params, representation_type)
 
@@ -62,7 +62,7 @@ def directedEvolution(
 
     # iterate through the trial mutation steps for the directed evolution trajectory
     for i in range(num_iterations):
-        proposal = proposeMutant(s_wt, mutated, scope, amino_acids)
+        proposal = proposeMutant(s_wt, mutated, scope)
         s_new = applyMutations(s_wt, proposal)  # new trial sequence
 
         try:
@@ -94,7 +94,6 @@ def runDirectedEvoTrajectories(
     regions,
     num_mutations_low,
     num_mutations_high,
-    amino_acids,
     params,
     representation_type,
 ):
@@ -112,7 +111,6 @@ def runDirectedEvoTrajectories(
             num_iterations,
             T,
             scope,
-            amino_acids,
             Model,
             params,
             representation_type,

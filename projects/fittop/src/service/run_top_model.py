@@ -38,7 +38,7 @@ def doFitTop(requestBody: RequestFitTopBody):
                 bucket_name=requestBody.artifact[requestBody.meta[1]].bucket_name,
                 model_path=requestBody.artifact[requestBody.meta[1]].path,
             )
-        elif evotune_model_type == "ESM":
+        elif evotune_model_type.lower() == "esm":
             seqs = loadESMseqs(
                 seqs_df=data,
                 bucket_name=requestBody.artifact[requestBody.meta[1]].bucket_name,

@@ -7,7 +7,6 @@
 # print(sys.path)
 
 
-import pickle as pkl
 import warnings
 
 import pandas as pd
@@ -16,6 +15,8 @@ from src.model.model import RequestEvotuneESMBody
 from src.service.db import getSequencesFromDB, uploadESMToDB
 from src.service.mq import publishCompletedJobStatusToMQ, publishFailedJobStatusToMQ
 from src.service.train import trainESM
+
+from pkg.common.esm import dumpESMModel
 
 warnings.filterwarnings("ignore")
 
@@ -54,34 +55,21 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
             )
             trainSet = filtered_df.drop(outDomainValSet.index)
 
-        outDomainValSet = outDomainValSet["sequences"].tolist()[:2]
-        trainSet = trainSet["sequences"].tolist()[:2]
-
-        # Create a dictionary to store the results
-        sequences = {
-            "train_set": trainSet,
-            "out_domain_val_set": outDomainValSet,
-        }
+        trainSet = trainSet["sequences"].tolist()
 
         # Evotune
         logger.info(f"job id {requestBody.job_id}: start evotuning")
-        df = trainESM(
-            sequences["train_set"], sequences["out_domain_val_set"], requestBody.config
-        )
-        esm_np = df.to_numpy()
+        model = trainESM(trainSet, requestBody.config)
         logger.info(f"job id {requestBody.job_id}: training done.")
 
-        # Convert evotuned_params to pkl file
-        model_weights = pkl.dumps(esm_np)
-
-        # Save model_weights (pkl file) to Unirep Object Storage
-        logger.debug("Saving esm_np...")
-        uploadESMToDB(requestBody.job_id + ".pkl", model_weights)
-        logger.info(f"job id {requestBody.job_id}: esm_np saved")
+        # Save the fine-tuned model to Unirep Object Storage
+        logger.debug("Saving the ESM model...")
+        uploadESMToDB(requestBody.job_id + ".pt", dumpESMModel(model))
+        logger.info(f"job id {requestBody.job_id}: ESM model saved")
 
         # Send Success Message to Message Queue
         logger.debug("Sending success message to MQ...")
-        publishCompletedJobStatusToMQ(requestBody.job_id, requestBody.job_id + ".pkl")
+        publishCompletedJobStatusToMQ(requestBody.job_id, requestBody.job_id + ".pt")
         logger.debug("Success message sent!")
 
         logger.info(f"job id {requestBody.job_id}: Evotune Thread finished")
@@ -93,6 +81,6 @@ def runEvotuneThread(requestBody: RequestEvotuneESMBody):
         # Send Error Message to Message Queue
         logger.debug("Sending error message to MQ...")
         publishFailedJobStatusToMQ(
-            requestBody.job_id, requestBody.job_id + ".pkl", str(err)
+            requestBody.job_id, requestBody.job_id + ".pt", str(err)
         )
         logger.debug("Error message sent!")

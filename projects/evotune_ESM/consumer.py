@@ -35,7 +35,7 @@ async def handle_message(body, logger):
 async def main(loop):
     logger = getLogger("Consumer")
     conn_url = os.getenv("RABBITMQ_URL")
-    binding_key = "evotune.ESM"
+    binding_key = "evotune.esm"
 
     try:
         logger.info("Connecting to RabbitMQ")
